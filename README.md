@@ -203,4 +203,4 @@ kubectl apply -f manifests/intelligent-hpa.yaml
 - [アーキテクチャ](./docs/architecture.md)
 - [Estimator とメトリクス調整の仕組み](./docs/estimator.md)
 - [学習ジョブの仕組み](./docs/fittingjob.md)
-- [開発者向け](./docs/developr.md)
+- [開発者向け](./docs/developer.md)

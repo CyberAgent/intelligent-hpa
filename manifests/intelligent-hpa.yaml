@@ -13572,6 +13572,4 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
-      imagePullSecrets:
-      - name: gcr-registry-pull
       terminationGracePeriodSeconds: 10

@@ -174,10 +174,10 @@ kubectl create job -n loadtest --from cronjob/ihpa-nginx-nginx-net-request-per-s
 
 ## Installation
 
-マニフェストを Apply します。
+マニフェストを直接 `create` します (現在 FittingJob の CRD 定義が大きすぎるため `apply` だと容量制限に引っかかります)。
 
 ```
-kubectl apply -f manifests/intelligent-hpa.yaml
+kubectl create -f manifests/intelligent-hpa.yaml
 ```
 
 ## Fitting Job

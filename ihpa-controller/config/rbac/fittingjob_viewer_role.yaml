@@ -1,0 +1,20 @@
+# permissions to do viewer fittingjobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fittingjob-viewer-role
+rules:
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - fittingjobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - fittingjobs/status
+  verbs:
+  - get

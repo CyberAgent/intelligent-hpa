@@ -1,0 +1,450 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: loadtest
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hey
+  namespace: loadtest
+spec:
+  containers:
+  - image: zuiurs/hey:latest
+    name: hey
+    command: ["bash", "/loadscript/load.sh"]
+    imagePullPolicy: Always
+    volumeMounts:
+    - name: loadscript
+      mountPath: /loadscript
+  restartPolicy: Never
+  volumes:
+  - name: loadscript
+    configMap:
+      name: load
+
+---
+# kubectl create configmap load -n loadtest --from-file=load.sh=load.sh -o yaml --dry-run
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: load
+  namespace: loadtest
+data:
+  load.sh: |
+    #!/bin/bash
+
+    ENDPOINT="http://nginx:8090/nginx_status"
+
+    # $1: load time (min)
+    # $2: requests/sec
+    load_hey() {
+      local load_concurrency=5
+      local load_time=$1
+      local load_requests=$2
+
+      ./hey \
+        -c ${load_concurrency} \
+        -q $((load_requests / load_concurrency)) \
+        -z "${load_time}m" \
+        ${ENDPOINT}
+    }
+
+    while :; do
+      load_hey 5 49
+      load_hey 5 51
+      load_hey 5 53
+      load_hey 5 53
+      load_hey 5 54
+      load_hey 5 54
+      load_hey 5 53
+      load_hey 5 52
+      load_hey 5 51
+      load_hey 5 50
+      load_hey 5 49
+      load_hey 5 47
+      load_hey 5 45
+      load_hey 5 44
+      load_hey 5 42
+      load_hey 5 40
+      load_hey 5 39
+      load_hey 5 37
+      load_hey 5 36
+      load_hey 5 34
+      load_hey 5 33
+      load_hey 5 31
+      load_hey 5 30
+      load_hey 5 29
+      load_hey 5 28
+      load_hey 5 27
+      load_hey 5 26
+      load_hey 5 26
+      load_hey 5 25
+      load_hey 5 25
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 24
+      load_hey 5 25
+      load_hey 5 25
+      load_hey 5 25
+      load_hey 5 26
+      load_hey 5 26
+      load_hey 5 26
+      load_hey 5 27
+      load_hey 5 27
+      load_hey 5 28
+      load_hey 5 28
+      load_hey 5 29
+      load_hey 5 29
+      load_hey 5 29
+      load_hey 5 30
+      load_hey 5 30
+      load_hey 5 30
+      load_hey 5 31
+      load_hey 5 31
+      load_hey 5 31
+      load_hey 5 32
+      load_hey 5 32
+      load_hey 5 32
+      load_hey 5 32
+      load_hey 5 32
+      load_hey 5 32
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 33
+      load_hey 5 34
+      load_hey 5 34
+      load_hey 5 34
+      load_hey 5 34
+      load_hey 5 34
+      load_hey 5 34
+      load_hey 5 35
+      load_hey 5 35
+      load_hey 5 35
+      load_hey 5 36
+      load_hey 5 36
+      load_hey 5 37
+      load_hey 5 37
+      load_hey 5 38
+      load_hey 5 38
+      load_hey 5 39
+      load_hey 5 40
+      load_hey 5 41
+      load_hey 5 42
+      load_hey 5 43
+      load_hey 5 44
+      load_hey 5 45
+      load_hey 5 46
+      load_hey 5 47
+      load_hey 5 48
+      load_hey 5 50
+      load_hey 5 51
+      load_hey 5 53
+      load_hey 5 54
+      load_hey 5 56
+      load_hey 5 57
+      load_hey 5 59
+      load_hey 5 61
+      load_hey 5 62
+      load_hey 5 64
+      load_hey 5 66
+      load_hey 5 68
+      load_hey 5 70
+      load_hey 5 72
+      load_hey 5 74
+      load_hey 5 76
+      load_hey 5 78
+      load_hey 5 79
+      load_hey 5 81
+      load_hey 5 83
+      load_hey 5 85
+      load_hey 5 87
+      load_hey 5 89
+      load_hey 5 91
+      load_hey 5 93
+      load_hey 5 95
+      load_hey 5 97
+      load_hey 5 98
+      load_hey 5 100
+      load_hey 5 102
+      load_hey 5 103
+      load_hey 5 105
+      load_hey 5 106
+      load_hey 5 107
+      load_hey 5 109
+      load_hey 5 110
+      load_hey 5 111
+      load_hey 5 112
+      load_hey 5 113
+      load_hey 5 114
+      load_hey 5 115
+      load_hey 5 116
+      load_hey 5 116
+      load_hey 5 117
+      load_hey 5 117
+      load_hey 5 117
+      load_hey 5 118
+      load_hey 5 118
+      load_hey 5 118
+      load_hey 5 118
+      load_hey 5 118
+      load_hey 5 118
+      load_hey 5 117
+      load_hey 5 117
+      load_hey 5 117
+      load_hey 5 116
+      load_hey 5 116
+      load_hey 5 115
+      load_hey 5 115
+      load_hey 5 114
+      load_hey 5 113
+      load_hey 5 113
+      load_hey 5 112
+      load_hey 5 111
+      load_hey 5 110
+      load_hey 5 109
+      load_hey 5 109
+      load_hey 5 108
+      load_hey 5 107
+      load_hey 5 106
+      load_hey 5 106
+      load_hey 5 105
+      load_hey 5 105
+      load_hey 5 104
+      load_hey 5 104
+      load_hey 5 103
+      load_hey 5 103
+      load_hey 5 103
+      load_hey 5 103
+      load_hey 5 103
+      load_hey 5 103
+      load_hey 5 103
+      load_hey 5 103
+      load_hey 5 104
+      load_hey 5 104
+      load_hey 5 105
+      load_hey 5 106
+      load_hey 5 107
+      load_hey 5 108
+      load_hey 5 110
+      load_hey 5 111
+      load_hey 5 113
+      load_hey 5 115
+      load_hey 5 117
+      load_hey 5 119
+      load_hey 5 121
+      load_hey 5 124
+      load_hey 5 127
+      load_hey 5 129
+      load_hey 5 132
+      load_hey 5 135
+      load_hey 5 139
+      load_hey 5 142
+      load_hey 5 145
+      load_hey 5 149
+      load_hey 5 153
+      load_hey 5 156
+      load_hey 5 160
+      load_hey 5 164
+      load_hey 5 168
+      load_hey 5 172
+      load_hey 5 176
+      load_hey 5 180
+      load_hey 5 184
+      load_hey 5 188
+      load_hey 5 192
+      load_hey 5 196
+      load_hey 5 200
+      load_hey 5 204
+      load_hey 5 208
+      load_hey 5 211
+      load_hey 5 215
+      load_hey 5 218
+      load_hey 5 221
+      load_hey 5 224
+      load_hey 5 227
+      load_hey 5 229
+      load_hey 5 232
+      load_hey 5 233
+      load_hey 5 235
+      load_hey 5 237
+      load_hey 5 238
+      load_hey 5 238
+      load_hey 5 239
+      load_hey 5 239
+      load_hey 5 238
+      load_hey 5 238
+      load_hey 5 236
+      load_hey 5 235
+      load_hey 5 233
+      load_hey 5 231
+      load_hey 5 228
+      load_hey 5 225
+      load_hey 5 221
+      load_hey 5 217
+      load_hey 5 213
+      load_hey 5 208
+      load_hey 5 203
+      load_hey 5 198
+      load_hey 5 192
+      load_hey 5 186
+      load_hey 5 179
+      load_hey 5 172
+      load_hey 5 165
+      load_hey 5 158
+      load_hey 5 151
+      load_hey 5 143
+      load_hey 5 135
+      load_hey 5 127
+      load_hey 5 119
+      load_hey 5 111
+      load_hey 5 104
+      load_hey 5 96
+      load_hey 5 88
+      load_hey 5 80
+      load_hey 5 73
+      load_hey 5 66
+      load_hey 5 59
+      load_hey 5 53
+      load_hey 5 47
+      load_hey 5 41
+      load_hey 5 36
+      load_hey 5 32
+      load_hey 5 28
+      load_hey 5 24
+      load_hey 5 22
+      load_hey 5 20
+      load_hey 5 18
+      load_hey 5 18
+      load_hey 5 18
+      load_hey 5 19
+      load_hey 5 20
+      load_hey 5 23
+      load_hey 5 25
+      load_hey 5 29
+      load_hey 5 33
+      load_hey 5 37
+      load_hey 5 41
+      load_hey 5 46
+      load_hey 5 51
+    done
+
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginxext
+  namespace: loadtest
+spec:
+  minReplicas: 1
+  maxReplicas: 30
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx
+  metrics:
+  - type: External
+    external:
+      metric:
+        name: nginx.net.request_per_s
+        selector:
+          matchLabels:
+            kube_namespace: loadtest
+            kube_deployment: nginx
+            kube_container_name: nginx
+      target:
+        type: AverageValue
+        averageValue: "10"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: loadtest
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+      annotations:
+        ad.datadoghq.com/nginx.check_names: '["nginx"]'
+        ad.datadoghq.com/nginx.init_configs: '[{}]'
+        ad.datadoghq.com/nginx.instances: '[{"nginx_status_url": "http://%%host%%/nginx_status", "tags": "%%tags%%"}]'
+        ad.datadoghq.com/nginx.logs: '[{"type": "docker","image": "nginx","service": "nginx","source": "nginx"}]'
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - name: http
+          containerPort: 80
+        volumeMounts:
+        - name: "config"
+          mountPath: "/etc/nginx/nginx.conf"
+          subPath: "nginx.conf"
+        resources:
+          requests:
+            cpu: "100m"
+      volumes:
+        - name: "config"
+          configMap:
+            name: "nginxconfig"
+
+---
+apiVersion: v1
+data:
+  nginx.conf: |+
+    worker_processes  5;
+    events {
+      worker_connections  4096;
+    }
+    http {
+        server {
+            location /nginx_status {
+              stub_status on;
+              access_log  /dev/stdout;
+              allow all;
+            }
+        }
+    }
+kind: ConfigMap
+metadata:
+  name: nginxconfig
+  namespace: loadtest
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx
+  name: nginx
+  namespace: loadtest
+spec:
+  selector:
+    app: nginx
+  ports:
+  - name: http
+    port: 8090
+    targetPort: 80

@@ -1,0 +1,20 @@
+# permissions for end users to view estimators.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: estimator-viewer-role
+rules:
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - estimators
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - estimators/status
+  verbs:
+  - get

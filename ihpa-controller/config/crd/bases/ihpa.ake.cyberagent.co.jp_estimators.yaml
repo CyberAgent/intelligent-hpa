@@ -1,0 +1,159 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.8
+  creationTimestamp: null
+  name: estimators.ihpa.ake.cyberagent.co.jp
+spec:
+  group: ihpa.ake.cyberagent.co.jp
+  names:
+    kind: Estimator
+    listKind: EstimatorList
+    plural: estimators
+    singular: estimator
+  scope: Namespaced
+  versions:
+  - name: v1beta2
+    schema:
+      openAPIV3Schema:
+        description: Estimator is the Schema for the estimators API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: EstimatorSpec defines the desired state of Estimator
+            properties:
+              baseMetricName:
+                description: BaseMetricName is a metric name to get base metric for
+                  adjustment.
+                type: string
+              baseMetricTags:
+                description: BaseMetricTags is some tags to get base metric for adjustment.
+                items:
+                  type: string
+                type: array
+              dataConfigMap:
+                description: DataConfigMap is destination of result fittingjob forecasted.
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
+              gapMinutes:
+                default: 10
+                description: GapMinutes is gap time for generating forecast metrics.
+                format: int32
+                minimum: 1
+                type: integer
+              metricName:
+                description: MetricName is a metric name to send
+                type: string
+              metricTags:
+                description: MetricTags is some tags to apply metric.
+                items:
+                  type: string
+                type: array
+              mode:
+                default: adjust
+                description: Mode is a way to adjust estimate metrics when the metrics
+                  out of line.
+                enum:
+                - raw
+                - adjust
+                type: string
+              provider:
+                description: MetricProvider is data source and destination of metrics
+                  datapoints.
+                properties:
+                  datadog:
+                    description: DatadogProviderSource defines parameters for accessing
+                      Datadog.
+                    properties:
+                      apikey:
+                        description: APIKey is for accessing some function and sending
+                          metrics.
+                        type: string
+                      appkey:
+                        description: APPKey is for retrieving metrics.
+                        type: string
+                      keysFrom:
+                        description: KeysFrom is list from APIKey and APPKey source
+                          object. The keys are set by searching "APIKey" and "APPKey"
+                          variables.
+                        items:
+                          description: EnvFromSource represents the source of a set
+                            of ConfigMaps
+                          properties:
+                            configMapRef:
+                              description: The ConfigMap to select from
+                              properties:
+                                name:
+                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Add other useful fields. apiVersion, kind,
+                                    uid?'
+                                  type: string
+                                optional:
+                                  description: Specify whether the ConfigMap must
+                                    be defined
+                                  type: boolean
+                              type: object
+                            prefix:
+                              description: An optional identifier to prepend to each
+                                key in the ConfigMap. Must be a C_IDENTIFIER.
+                              type: string
+                            secretRef:
+                              description: The Secret to select from
+                              properties:
+                                name:
+                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Add other useful fields. apiVersion, kind,
+                                    uid?'
+                                  type: string
+                                optional:
+                                  description: Specify whether the Secret must be
+                                    defined
+                                  type: boolean
+                              type: object
+                          type: object
+                        type: array
+                    type: object
+                  name:
+                    description: Name is a name of provider
+                    type: string
+                  prometheus:
+                    description: PrometheusProviderSource defines parameters for accessing
+                      Prometheus.
+                    type: object
+                type: object
+            required:
+            - dataConfigMap
+            - metricName
+            - metricTags
+            - provider
+            type: object
+          status:
+            description: EstimatorStatus defines the observed state of Estimator
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -1,0 +1,24 @@
+# permissions for end users to edit estimators.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: estimator-editor-role
+rules:
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - estimators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - estimators/status
+  verbs:
+  - get

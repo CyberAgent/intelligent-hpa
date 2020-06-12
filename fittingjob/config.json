@@ -1,0 +1,26 @@
+{
+    "provider":{
+        "datadog":{
+            "apikey":"xxx",
+            "appkey":"yyy"
+        }
+    },
+    "targetMetricsName":"nginx.net.request_per_s",
+    "targetTags":{
+        "kube_namespace":"loadtest",
+        "kube_deployment":"nginx"
+    },
+    "seasonality":"auto",
+    "dataConfigMapName":"checkcm",
+    "dataConfigMapNamespace":"loadtest",
+    "changePointDetection":{
+        "percentageThreshold":50,
+        "windowSize":100,
+        "trajectoryRows":50,
+        "trajectoryFeatures":5,
+        "testRows":50,
+        "testFeatures":5,
+        "lag":288
+    },
+    "customConfig":""
+}

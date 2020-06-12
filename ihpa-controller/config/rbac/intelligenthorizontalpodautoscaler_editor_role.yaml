@@ -1,0 +1,26 @@
+# permissions to do edit intelligenthorizontalpodautoscalers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: intelligenthorizontalpodautoscaler-editor-role
+rules:
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - intelligenthorizontalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - intelligenthorizontalpodautoscalers/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -1,0 +1,20 @@
+# permissions to do viewer intelligenthorizontalpodautoscalers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: intelligenthorizontalpodautoscaler-viewer-role
+rules:
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - intelligenthorizontalpodautoscalers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - intelligenthorizontalpodautoscalers/status
+  verbs:
+  - get

@@ -1,0 +1,10 @@
+# anglar load
+
+load_hey 180 250
+load_hey 120 150
+load_hey 180 80
+load_hey 300 30
+load_hey 180 100
+load_hey 180 250
+load_hey 180 100
+load_hey 120 150

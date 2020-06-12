@@ -1,0 +1,19 @@
+domain: ake.cyberagent.co.jp
+repo: github.com/cyberagent-oss/intelligent-hpa/ihpa-controller
+resources:
+- group: ihpa
+  kind: IntelligentHorizontalPodAutoscaler
+  version: v1beta1
+- group: ihpa
+  kind: FittingJob
+  version: v1beta1
+- group: ihpa
+  kind: IntelligentHorizontalPodAutoscaler
+  version: v1beta2
+- group: ihpa
+  kind: FittingJob
+  version: v1beta2
+- group: ihpa
+  kind: Estimator
+  version: v1beta2
+version: "2"

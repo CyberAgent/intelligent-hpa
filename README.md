@@ -26,6 +26,8 @@ helm install datadog stable/datadog \
   --set datadog.appKey=yyy \
   --set clusterAgent.enabled=true \
   --set clusterAgent.metricsProvider.enabled=true \
+  --set datadog.env[0].name="DD_CHECKS_TAG_CARDINALITY" \
+  --set datadog.env[0].value="orchestrator" \
   --set datadog.tags={"kube_system_uid:${KUBE_SYSTEM_UID}"}
 ```
 

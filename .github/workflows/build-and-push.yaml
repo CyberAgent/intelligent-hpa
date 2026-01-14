@@ -1,0 +1,178 @@
+name: Build and Push Images
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - master
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  CONTROLLER_IMAGE_NAME: ${{ github.repository }}/intelligent-hpa-controller
+  FITTINGJOB_IMAGE_NAME: ${{ github.repository }}/intelligent-hpa-fittingjob
+
+jobs:
+  build-and-push-controller:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for controller
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push controller image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ihpa-controller
+          file: ./ihpa-controller/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-and-push-fittingjob:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for fittingjob
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FITTINGJOB_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push fittingjob image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./fittingjob
+          file: ./fittingjob/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  generate-manifest:
+    runs-on: ubuntu-latest
+    needs: [build-and-push-controller, build-and-push-fittingjob]
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.13'
+
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Install controller-gen
+        run: |
+          cd /tmp
+          go mod init tmp
+          go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
+          go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
+
+      - name: Generate manifests
+        run: |
+          cd ihpa-controller
+          make manifests
+
+      - name: Determine image tag
+        id: image-tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+          elif [[ "${{ github.ref }}" == refs/heads/main ]] || [[ "${{ github.ref }}" == refs/heads/master ]]; then
+            TAG="latest"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Update controller image in kustomization
+        run: |
+          cd ihpa-controller/config/manager
+          kustomize edit set image controller=${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }}
+
+      - name: Build final manifest
+        run: |
+          cd ihpa-controller
+          kustomize build config/default > ../manifests/intelligent-hpa.yaml
+
+      - name: Upload manifest as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligent-hpa-manifest
+          path: manifests/intelligent-hpa.yaml
+
+      - name: Commit and push manifest
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add manifests/intelligent-hpa.yaml
+          if git diff --staged --quiet; then
+            echo "No changes to manifest"
+          else
+            git commit -m "Update manifest with image tag ${{ steps.image-tag.outputs.tag }}"
+            git push
+          fi

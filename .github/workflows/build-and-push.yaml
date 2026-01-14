@@ -110,6 +110,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-push-controller, build-and-push-fittingjob]
     if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+      packages: read
 
     steps:
       - name: Checkout repository

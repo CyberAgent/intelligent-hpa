@@ -122,8 +122,8 @@ timestamp,yhat,yhat_upper,yhat_lower
 **フィールド説明:**
 - `timestamp`: Unix時間（秒）
 - `yhat`: 予測値
-- `yhat_upper`: 予測値の上限（90%ile）
-- `yhat_lower`: 予測値の下限（10%ile）
+- `yhat_upper`: 予測値の上限（90th percentile）
+- `yhat_lower`: 予測値の下限（10th percentile）
 
 ### メトリクス命名規則
 

@@ -205,3 +205,4 @@ You can tune these parameters by [Jupyter Notebook](./fittingjob/change_point_de
 - [How Estimator works](./docs/estimator.md)
 - [How FittingJob works](./docs/fittingjob.md)
 - [For developers](./docs/developer.md)
+- [Automation](./docs/automation.md)

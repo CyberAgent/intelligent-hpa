@@ -1,10 +1,10 @@
 #COMMIT_HASH=`git rev-parse --short HEAD`
 COMMIT_HASH=latest
 
-# Default to GitHub Packages registry
-REGISTRY?=ghcr.io/cyberagent
-FITTINGJOB_IMAGE=$(REGISTRY)/intelligent-hpa/intelligent-hpa-fittingjob
-CONTROLLER_IMAGE=$(REGISTRY)/intelligent-hpa/intelligent-hpa-controller
+# Default to GitHub Packages registry for this project
+REGISTRY?=ghcr.io/cyberagent/intelligent-hpa
+FITTINGJOB_IMAGE=$(REGISTRY)/intelligent-hpa-fittingjob
+CONTROLLER_IMAGE=$(REGISTRY)/intelligent-hpa-controller
 
 fittingjob:
 	docker build -t $(FITTINGJOB_IMAGE):$(COMMIT_HASH) ./fittingjob

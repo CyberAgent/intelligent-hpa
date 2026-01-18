@@ -36,7 +36,8 @@ The following tags are automatically generated:
 
 - `latest`: Latest build from the default branch (main/master)
 - `<branch-name>`: Branch name for branch builds
-- `<branch-name>-<sha>`: Branch name with commit SHA
+- `pr-<number>`: Pull request number for PR builds
+- `sha-<sha>`: Short commit SHA (e.g., `sha-024ec94`)
 - `<version>`: Semantic version from git tags (e.g., `1.0.0`)
 - `<major>.<minor>`: Semantic version without patch (e.g., `1.0`)
 

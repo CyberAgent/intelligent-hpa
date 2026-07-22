@@ -54,6 +54,21 @@ type EstimateTarget struct {
 type EstimateOperation struct {
 	Operator EstimateOperator
 	Target   EstimateTarget
+	Patch    *EstimateTargetPatch
+}
+
+// EstimateTargetPatch represents a partial update to an EstimateTarget.
+// Only non-nil fields will be applied. This allows callers to distinguish
+// between "field not provided" (nil) and "field set to zero value" (e.g. *0, *"").
+type EstimateTargetPatch struct {
+	ID             string
+	EstimateMode   *string
+	GapMinutes     *int
+	MetricProvider metricprovider.MetricProvider
+	MetricName     *string
+	MetricTags     *[]string
+	BaseMetricName *string
+	BaseMetricTags *[]string
 }
 
 type EstimateDatum struct {
@@ -156,14 +171,14 @@ func estimatorHandler(opeCh <-chan *EstimateOperation, log logr.Logger) {
 				go et.estimator()
 				estimateTargets = append(estimateTargets, et)
 
-			case EstimateUpdate:
-				patch := ope.Target
-				log.V(LogicMessageLogLevel).Info("update estimator", "id", patch.ID)
-				for i, et := range estimateTargets {
-					if et.ID == patch.ID {
-						if err := et.updateEstimateTarget(&patch); err != nil {
-							log.V(LogicMessageLogLevel).Info("update estimator error", "error_msg", err)
-						}
+		case EstimateUpdate:
+			patch := ope.Patch
+			log.V(LogicMessageLogLevel).Info("update estimator", "id", patch.ID)
+			for i, et := range estimateTargets {
+				if et.ID == patch.ID {
+					if err := et.updateEstimateTarget(patch); err != nil {
+						log.V(LogicMessageLogLevel).Info("update estimator error", "error_msg", err)
+					}
 
 						close(et.estimatorStopCh)
 						et.estimatorStopCh = make(chan struct{})
@@ -337,32 +352,31 @@ estimatorLoop:
 	et.V(LogicMessageLogLevel).Info("stop estimator", "id", et.ID)
 }
 
-func (base *EstimateTarget) updateEstimateTarget(patch *EstimateTarget) error {
+func (base *EstimateTarget) updateEstimateTarget(patch *EstimateTargetPatch) error {
 	if base.ID != patch.ID {
 		return fmt.Errorf("target id is not match: base=%s, patch=%s", base.ID, patch.ID)
 	}
 
-	// TODO: look for a smart way to overwrite by only not zero value
-	if patch.EstimateMode != "" {
-		base.EstimateMode = patch.EstimateMode
+	if patch.EstimateMode != nil {
+		base.EstimateMode = *patch.EstimateMode
 	}
-	if patch.GapMinutes != 0 {
-		base.GapMinutes = patch.GapMinutes
+	if patch.GapMinutes != nil {
+		base.GapMinutes = *patch.GapMinutes
 	}
 	if patch.MetricProvider != nil {
 		base.MetricProvider = patch.MetricProvider
 	}
-	if patch.MetricName != "" {
-		base.MetricName = patch.MetricName
+	if patch.MetricName != nil {
+		base.MetricName = *patch.MetricName
 	}
 	if patch.MetricTags != nil {
-		base.MetricTags = patch.MetricTags
+		base.MetricTags = *patch.MetricTags
 	}
-	if patch.BaseMetricName != "" {
-		base.BaseMetricName = patch.BaseMetricName
+	if patch.BaseMetricName != nil {
+		base.BaseMetricName = *patch.BaseMetricName
 	}
 	if patch.BaseMetricTags != nil {
-		base.BaseMetricTags = patch.BaseMetricTags
+		base.BaseMetricTags = *patch.BaseMetricTags
 	}
 
 	return nil

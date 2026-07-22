@@ -199,10 +199,8 @@ func TestAdjustYHat(t *testing.T) {
 
 func TestUpdateEstimateTarget(t *testing.T) {
 	dummyByteCh1 := make(chan []byte)
-	dummyByteCh2 := make(chan []byte)
 
 	dummyStructCh1 := make(chan struct{})
-	dummyStructCh2 := make(chan struct{})
 
 	dummyProvider1 := &datadog.Datadog{
 		APIKey: "xxx",
@@ -213,9 +211,13 @@ func TestUpdateEstimateTarget(t *testing.T) {
 		APPKey: "bbb",
 	}
 
+	strPtr := func(s string) *string { return &s }
+	intPtr := func(i int) *int { return &i }
+	sliceStrPtr := func(s []string) *[]string { return &s }
+
 	tests := []struct {
 		base     EstimateTarget
-		patch    EstimateTarget
+		patch    EstimateTargetPatch
 		expected EstimateTarget
 		hasError bool
 	}{
@@ -232,14 +234,14 @@ func TestUpdateEstimateTarget(t *testing.T) {
 				DataCh:          dummyByteCh1,
 				estimatorStopCh: dummyStructCh1,
 			},
-			patch: EstimateTarget{
+			patch: EstimateTargetPatch{
 				ID:             "a",
-				EstimateMode:   "adjust",
-				GapMinutes:     5,
-				MetricName:     "metric2",
-				MetricTags:     []string{"hello"},
-				BaseMetricName: "base-metric2",
-				BaseMetricTags: []string{"hello", "foo"},
+				EstimateMode:   strPtr("adjust"),
+				GapMinutes:     intPtr(5),
+				MetricName:     strPtr("metric2"),
+				MetricTags:     sliceStrPtr([]string{"hello"}),
+				BaseMetricName: strPtr("base-metric2"),
+				BaseMetricTags: sliceStrPtr([]string{"hello", "foo"}),
 				MetricProvider: dummyProvider2,
 			},
 			expected: EstimateTarget{
@@ -269,10 +271,10 @@ func TestUpdateEstimateTarget(t *testing.T) {
 				DataCh:          dummyByteCh1,
 				estimatorStopCh: dummyStructCh1,
 			},
-			patch: EstimateTarget{
+			patch: EstimateTargetPatch{
 				ID:             "a",
-				EstimateMode:   "adjust",
-				BaseMetricTags: []string{"hello", "foo"},
+				EstimateMode:   strPtr("adjust"),
+				BaseMetricTags: sliceStrPtr([]string{"hello", "foo"}),
 			},
 			expected: EstimateTarget{
 				ID:              "a",
@@ -301,10 +303,8 @@ func TestUpdateEstimateTarget(t *testing.T) {
 				DataCh:          dummyByteCh1,
 				estimatorStopCh: dummyStructCh1,
 			},
-			patch: EstimateTarget{
-				ID:              "a",
-				DataCh:          dummyByteCh2,
-				estimatorStopCh: dummyStructCh2,
+			patch: EstimateTargetPatch{
+				ID: "a",
 			},
 			expected: EstimateTarget{
 				ID:              "a",
@@ -312,6 +312,102 @@ func TestUpdateEstimateTarget(t *testing.T) {
 				GapMinutes:      10,
 				MetricName:      "metric1",
 				MetricTags:      []string{"hello", "world"},
+				BaseMetricName:  "base-metric1",
+				BaseMetricTags:  []string{"hello", "world", "foo"},
+				MetricProvider:  dummyProvider1,
+				DataCh:          dummyByteCh1,
+				estimatorStopCh: dummyStructCh1,
+			},
+			hasError: false,
+		},
+		{
+			// Test: set GapMinutes to 0 (zero value) via pointer
+			base: EstimateTarget{
+				ID:              "a",
+				EstimateMode:    "raw",
+				GapMinutes:      10,
+				MetricName:      "metric1",
+				MetricTags:      []string{"hello", "world"},
+				BaseMetricName:  "base-metric1",
+				BaseMetricTags:  []string{"hello", "world", "foo"},
+				MetricProvider:  dummyProvider1,
+				DataCh:          dummyByteCh1,
+				estimatorStopCh: dummyStructCh1,
+			},
+			patch: EstimateTargetPatch{
+				ID:         "a",
+				GapMinutes: intPtr(0),
+			},
+			expected: EstimateTarget{
+				ID:              "a",
+				EstimateMode:    "raw",
+				GapMinutes:      0,
+				MetricName:      "metric1",
+				MetricTags:      []string{"hello", "world"},
+				BaseMetricName:  "base-metric1",
+				BaseMetricTags:  []string{"hello", "world", "foo"},
+				MetricProvider:  dummyProvider1,
+				DataCh:          dummyByteCh1,
+				estimatorStopCh: dummyStructCh1,
+			},
+			hasError: false,
+		},
+		{
+			// Test: set MetricName to "" (zero value) via pointer
+			base: EstimateTarget{
+				ID:              "a",
+				EstimateMode:    "raw",
+				GapMinutes:      10,
+				MetricName:      "metric1",
+				MetricTags:      []string{"hello", "world"},
+				BaseMetricName:  "base-metric1",
+				BaseMetricTags:  []string{"hello", "world", "foo"},
+				MetricProvider:  dummyProvider1,
+				DataCh:          dummyByteCh1,
+				estimatorStopCh: dummyStructCh1,
+			},
+			patch: EstimateTargetPatch{
+				ID:         "a",
+				MetricName: strPtr(""),
+			},
+			expected: EstimateTarget{
+				ID:              "a",
+				EstimateMode:    "raw",
+				GapMinutes:      10,
+				MetricName:      "",
+				MetricTags:      []string{"hello", "world"},
+				BaseMetricName:  "base-metric1",
+				BaseMetricTags:  []string{"hello", "world", "foo"},
+				MetricProvider:  dummyProvider1,
+				DataCh:          dummyByteCh1,
+				estimatorStopCh: dummyStructCh1,
+			},
+			hasError: false,
+		},
+		{
+			// Test: set MetricTags to empty slice via pointer
+			base: EstimateTarget{
+				ID:              "a",
+				EstimateMode:    "raw",
+				GapMinutes:      10,
+				MetricName:      "metric1",
+				MetricTags:      []string{"hello", "world"},
+				BaseMetricName:  "base-metric1",
+				BaseMetricTags:  []string{"hello", "world", "foo"},
+				MetricProvider:  dummyProvider1,
+				DataCh:          dummyByteCh1,
+				estimatorStopCh: dummyStructCh1,
+			},
+			patch: EstimateTargetPatch{
+				ID:         "a",
+				MetricTags: sliceStrPtr([]string{}),
+			},
+			expected: EstimateTarget{
+				ID:              "a",
+				EstimateMode:    "raw",
+				GapMinutes:      10,
+				MetricName:      "metric1",
+				MetricTags:      []string{},
 				BaseMetricName:  "base-metric1",
 				BaseMetricTags:  []string{"hello", "world", "foo"},
 				MetricProvider:  dummyProvider1,
@@ -333,9 +429,9 @@ func TestUpdateEstimateTarget(t *testing.T) {
 				DataCh:          dummyByteCh1,
 				estimatorStopCh: dummyStructCh1,
 			},
-			patch: EstimateTarget{
+			patch: EstimateTargetPatch{
 				ID:           "b",
-				EstimateMode: "adjust",
+				EstimateMode: strPtr("adjust"),
 			},
 			expected: EstimateTarget{},
 			hasError: true,

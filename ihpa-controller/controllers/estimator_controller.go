@@ -121,14 +121,14 @@ func (r *EstimatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			"baseMetricName", est.Spec.BaseMetricName, "baseMetricTags", est.Spec.BaseMetricTags)
 		r.opeCh <- &EstimateOperation{
 			Operator: EstimateUpdate,
-			Target: EstimateTarget{
+			Patch: &EstimateTargetPatch{
 				ID:             req.String(),
-				EstimateMode:   est.Spec.Mode,
-				GapMinutes:     int(est.Spec.GapMinutes),
-				MetricName:     est.Spec.MetricName,
-				MetricTags:     est.Spec.MetricTags,
-				BaseMetricName: est.Spec.BaseMetricName,
-				BaseMetricTags: est.Spec.BaseMetricTags,
+				EstimateMode:   &est.Spec.Mode,
+				GapMinutes:     ptrToInt(int(est.Spec.GapMinutes)),
+				MetricName:     &est.Spec.MetricName,
+				MetricTags:     &est.Spec.MetricTags,
+				BaseMetricName: &est.Spec.BaseMetricName,
+				BaseMetricTags: &est.Spec.BaseMetricTags,
 				MetricProvider: mpconfig.ConvertMetricProvider(est.Spec.Provider.DeepCopy()).ActiveProvider(),
 			},
 		}
@@ -171,4 +171,8 @@ func (r *EstimatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&ihpav1beta2.Estimator{}).
 		Owns(&corev1.ConfigMap{}).
 		Complete(r)
+}
+
+func ptrToInt(v int) *int {
+	return &v
 }

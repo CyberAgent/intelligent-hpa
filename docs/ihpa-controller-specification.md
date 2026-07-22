@@ -840,6 +840,23 @@ func sumUpResourceLists(resourceLists []corev1.ResourceList) *corev1.ResourceLis
 - CronJob
 - カスタムリソース
 
+### ステータスConfigMap
+
+IHPA Controllerは各Reconcileループの最後にステータス情報をConfigMapに書き込みます。
+これにより、外部からIHPAの状態を確認できます。
+
+**ConfigMap名:** `ihpa-<ihpa-name>-status`
+
+**ConfigMapのデータ:**
+- `hpaName`: 生成されたHPAリソース名
+- `fittingJobNames`: 生成されたFittingJob名のカンマ区切りリスト
+- `estimatorNames`: 生成されたEstimator名のカンマ区切りリスト
+
+**確認方法:**
+```sh
+kubectl get configmap ihpa-<ihpa-name>-status -n <namespace> -o yaml
+```
+
 ### 今後の改善案
 
 **パフォーマンス最適化:**

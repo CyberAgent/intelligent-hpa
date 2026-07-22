@@ -260,6 +260,27 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(req ctrl.Reques
 	}
 	log.V(ResourceMessageLogLevel).Info("successed to apply annotation", fittingJobIDsAnnotation, fjIdsStr)
 
+	// * create/update status configmap
+	statusCM, err := g.StatusConfigMapResource()
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to generate status configmap: %w", err)
+	}
+	existingCM := &corev1.ConfigMap{}
+	if err := r.Get(ctx, types.NamespacedName{Namespace: statusCM.GetNamespace(), Name: statusCM.GetName()}, existingCM); apierrors.IsNotFound(err) {
+		log.V(ResourceMessageLogLevel).Info("initialize status configmap", "name", statusCM.GetName())
+		if err := r.Create(ctx, statusCM); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to create status configmap: %w", err)
+		}
+	} else if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get status configmap: %w", err)
+	} else {
+		existingCM.Data = statusCM.Data
+		if err := r.Update(ctx, existingCM); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to update status configmap: %w", err)
+		}
+	}
+	log.V(ResourceMessageLogLevel).Info("successed to create/update status configmap", "name", statusCM.GetName())
+
 	return ctrl.Result{}, nil
 }
 

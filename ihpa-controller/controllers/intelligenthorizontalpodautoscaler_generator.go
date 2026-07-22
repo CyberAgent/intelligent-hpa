@@ -18,4 +18,7 @@ type IntelligentHorizontalPodAutoscalerGenerator interface {
 	EstimatorResources() ([]*ihpav1beta2.Estimator, error)
 	// RBACResources generate some resource for accessing to ConfigMap from FittingJob.
 	RBACResources() (*corev1.ServiceAccount, *rbacv1.Role, *rbacv1.RoleBinding, error)
+	// StatusConfigMapResource generate a ConfigMap that contains status information
+	// about the reconciled IHPA resources (HPA, FittingJobs, Estimators).
+	StatusConfigMapResource() (*corev1.ConfigMap, error)
 }

@@ -40,6 +40,7 @@ func (mi *metricIdentifier) GetScale() int   { return mi.scale }
 type Prometheus struct {
 	URL            string `json:"url"`
 	PushgatewayURL string `json:"pushgatewayUrl"`
+	Aggregation    string `json:"aggregation,omitempty"`
 }
 
 type queryResponse struct {
@@ -211,7 +212,11 @@ func (p *Prometheus) ConvertPodsMetricName(metricName string, reverse bool) metr
 	return nil
 }
 
-// AddSumAggregator wraps the metric name with sum() for Prometheus queries.
-func (p *Prometheus) AddSumAggregator(metricName string) string {
-	return fmt.Sprintf("sum(%s)", metricName)
+// AddAggregator wraps the metric name with the configured aggregation function for Prometheus queries.
+func (p *Prometheus) AddAggregator(metricName string) string {
+	aggregation := p.Aggregation
+	if aggregation == "" {
+		aggregation = "sum"
+	}
+	return fmt.Sprintf("%s(%s)", aggregation, metricName)
 }

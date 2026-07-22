@@ -135,6 +135,16 @@ spec:
                   name:
                     description: Name is a name of provider
                     type: string
+                  aggregation:
+                    description: Aggregation is the aggregation function used when
+                      querying metrics. Valid values are: sum, min, max, count, avg.
+                    enum:
+                    - sum
+                    - min
+                    - max
+                    - count
+                    - avg
+                    type: string
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
@@ -390,6 +400,16 @@ spec:
                     type: object
                   name:
                     description: Name is a name of provider
+                    type: string
+                  aggregation:
+                    description: Aggregation is the aggregation function used when
+                      querying metrics. Valid values are: sum, min, max, count, avg.
+                    enum:
+                    - sum
+                    - min
+                    - max
+                    - count
+                    - avg
                     type: string
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
@@ -8022,6 +8042,16 @@ spec:
                   name:
                     description: Name is a name of provider
                     type: string
+                  aggregation:
+                    description: Aggregation is the aggregation function used when
+                      querying metrics. Valid values are: sum, min, max, count, avg.
+                    enum:
+                    - sum
+                    - min
+                    - max
+                    - count
+                    - avg
+                    type: string
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
@@ -9545,6 +9575,16 @@ spec:
                   name:
                     description: Name is a name of provider
                     type: string
+                  aggregation:
+                    description: Aggregation is the aggregation function used when
+                      querying metrics. Valid values are: sum, min, max, count, avg.
+                    enum:
+                    - sum
+                    - min
+                    - max
+                    - count
+                    - avg
+                    type: string
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
@@ -10161,6 +10201,16 @@ spec:
                     type: object
                   name:
                     description: Name is a name of provider
+                    type: string
+                  aggregation:
+                    description: Aggregation is the aggregation function used when
+                      querying metrics. Valid values are: sum, min, max, count, avg.
+                    enum:
+                    - sum
+                    - min
+                    - max
+                    - count
+                    - avg
                     type: string
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing

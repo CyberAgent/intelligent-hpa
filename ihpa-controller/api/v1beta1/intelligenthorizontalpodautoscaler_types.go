@@ -96,6 +96,12 @@ type MetricProvider struct {
 	// Name is a name of provider
 	Name string `json:"name,omitempty"`
 
+	// Aggregation is the aggregation function used when querying metrics.
+	// Valid values are: sum, min, max, count, avg.
+	// +kubebuilder:validation:Enum=sum;min;max;count;avg
+	// +kubebuilder:default=sum
+	Aggregation string `json:"aggregation,omitempty"`
+
 	// ProviderSource is source of metrics provider.
 	// This is defined as ***ProviderSource.
 	ProviderSource `json:",inline"`

@@ -79,6 +79,9 @@ IHPA manifest has some field below:
 - `metricProvider`
     - Provider for sending and fetching metrics
     - Datadog and Prometheus are supported
+    - `aggregation`
+        - Aggregation function used when querying metrics
+        - Allowable: `sum`, `min`, `max`, `count`, `avg` (default: `sum`)
 - `template`
     - Almost same template as HorizontalPodAutoscaler
     - You can copy/paste HPA manifests to this field
@@ -124,6 +127,7 @@ spec:
     mode: adjust
   metricProvider:
     name: datadog
+    aggregation: sum
     datadog:
       apikey: xxx
       appkey: yyy

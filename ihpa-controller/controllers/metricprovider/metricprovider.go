@@ -12,8 +12,10 @@ type MetricProvider interface {
 	ConvertObjectMetricName(metricName string, reverse bool) MetricIdentifier
 	// ConvertPodsMetricName convert given name to provider depended name for Pods type.
 	ConvertPodsMetricName(metricName string, reverse bool) MetricIdentifier
-	// AddSumAggregator add sum aggregator to metric name to get sum of metric point.
-	AddSumAggregator(metricName string) string
+	// AddAggregator adds an aggregation function to the metric name.
+	// The aggregation function is determined by the provider's configuration
+	// (e.g., "sum", "min", "max", "count", "avg").
+	AddAggregator(metricName string) string
 }
 
 type MetricIdentifier interface {

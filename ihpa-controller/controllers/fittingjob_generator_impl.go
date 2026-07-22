@@ -24,7 +24,7 @@ func (g *fittingJobGeneratorImpl) ConfigMapResource() (*corev1.ConfigMap, error)
 
 	fittingJobConfig := &FittingJobConfig{
 		MetricProvider:             *mpConfig,
-		TargetMetricsName:          mpConfig.ActiveProvider().AddSumAggregator(g.fj.Spec.TargetMetric.Name),
+		TargetMetricsName:          mpConfig.ActiveProvider().AddAggregator(g.fj.Spec.TargetMetric.Name),
 		TargetTags:                 g.fj.Spec.TargetMetric.Selector.MatchLabels,
 		Seasonality:                g.fj.Spec.Seasonality,
 		ChangePointDetectionConfig: g.fj.Spec.ChangePointDetectionConfig,

@@ -37,8 +37,9 @@ func (mi *metricIdentifier) GetName() string { return mi.name }
 func (mi *metricIdentifier) GetScale() int   { return mi.scale }
 
 type Datadog struct {
-	APIKey string `json:"apikey"`
-	APPKey string `json:"appkey"`
+	APIKey      string `json:"apikey"`
+	APPKey      string `json:"appkey"`
+	Aggregation string `json:"aggregation,omitempty"`
 }
 
 type datapoint struct {
@@ -368,6 +369,10 @@ func (d *Datadog) ConvertPodsMetricName(metricName string, reverse bool) metricp
 	return nil
 }
 
-func (d *Datadog) AddSumAggregator(metricName string) string {
-	return "sum:" + metricName
+func (d *Datadog) AddAggregator(metricName string) string {
+	aggregation := d.Aggregation
+	if aggregation == "" {
+		aggregation = "sum"
+	}
+	return aggregation + ":" + metricName
 }

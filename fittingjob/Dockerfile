@@ -5,9 +5,7 @@ WORKDIR /app
 COPY ./Pipfile /app/Pipfile
 COPY ./Pipfile.lock /app/Pipfile.lock
 RUN pip install pipenv
-# Install numpy, Cython and pandas first as they are required to build fbprophet
-RUN pip install numpy cython pandas
-RUN pipenv install --skip-lock --system
+RUN pipenv install --system
 
 COPY ./ /app/
 

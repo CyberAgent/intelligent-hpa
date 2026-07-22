@@ -247,7 +247,7 @@ estimatorLoop:
 					prevData = *d
 					var err error
 					prevY, err = et.MetricProvider.Fetch(
-						et.MetricProvider.AddSumAggregator(et.BaseMetricName),
+						et.MetricProvider.AddAggregator(et.BaseMetricName),
 						prevData.UnixTime,
 						et.BaseMetricTags,
 						nil,

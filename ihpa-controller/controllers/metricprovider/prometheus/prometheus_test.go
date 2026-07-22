@@ -230,27 +230,62 @@ func TestPrometheusConvertResourceMetricName(t *testing.T) {
 	}
 }
 
-func TestPrometheusAddSumAggregator(t *testing.T) {
-	p := &Prometheus{}
-
+func TestPrometheusAddAggregator(t *testing.T) {
 	tests := []struct {
-		metricName string
-		expected   string
+		name        string
+		aggregation string
+		metricName  string
+		expected    string
 	}{
 		{
+			name:       "default sum",
 			metricName: "container_cpu_usage_seconds_total",
 			expected:   "sum(container_cpu_usage_seconds_total)",
 		},
 		{
+			name:       "default sum for arbitrary metric",
 			metricName: "ihpa.test.metric",
 			expected:   "sum(ihpa.test.metric)",
+		},
+		{
+			name:        "explicit sum",
+			aggregation: "sum",
+			metricName:  "container_cpu_usage_seconds_total",
+			expected:    "sum(container_cpu_usage_seconds_total)",
+		},
+		{
+			name:        "min aggregation",
+			aggregation: "min",
+			metricName:  "container_cpu_usage_seconds_total",
+			expected:    "min(container_cpu_usage_seconds_total)",
+		},
+		{
+			name:        "max aggregation",
+			aggregation: "max",
+			metricName:  "ihpa.test.metric",
+			expected:    "max(ihpa.test.metric)",
+		},
+		{
+			name:        "count aggregation",
+			aggregation: "count",
+			metricName:  "ihpa.test.metric",
+			expected:    "count(ihpa.test.metric)",
+		},
+		{
+			name:        "avg aggregation",
+			aggregation: "avg",
+			metricName:  "ihpa.test.metric",
+			expected:    "avg(ihpa.test.metric)",
 		},
 	}
 
 	for _, tt := range tests {
-		got := p.AddSumAggregator(tt.metricName)
-		if got != tt.expected {
-			t.Fatalf("AddSumAggregator(%q) = %q, expected %q", tt.metricName, got, tt.expected)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Prometheus{Aggregation: tt.aggregation}
+			got := p.AddAggregator(tt.metricName)
+			if got != tt.expected {
+				t.Fatalf("AddAggregator(%q) = %q, expected %q", tt.metricName, got, tt.expected)
+			}
+		})
 	}
 }

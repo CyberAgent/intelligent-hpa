@@ -77,6 +77,9 @@ Intelligent HPA のマニフェストについて説明します。
 - `metricProvider`
     - メトリクスを取得・送信するプロバイダを設定します
     - Datadog と Prometheus に対応しています
+    - `aggregation`
+        - メトリクスのクエリ時に使用する集計関数を指定します
+        - 許容値: `sum`, `min`, `max`, `count`, `avg` (default: `sum`)
 - `template`
     - HPA のマニフェストを記述します
     - HPA から移行する場合はそのままここにコピーしてください
@@ -123,6 +126,7 @@ spec:
     mode: adjust
   metricProvider:
     name: datadog
+    aggregation: sum
     datadog:
       apikey: xxx
       appkey: yyy

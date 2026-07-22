@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3f0cd91911af69bcc83f75e5032ab03f1d570c98967ed4320a03094bb6b902c0"
+            "sha256": "ad2889ce3bc5eb468529188db6f00e5d5e4bec5ff7af0d1bb7dd86b78ebac7e2"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -426,13 +426,30 @@
             "markers": "python_version >= '3.8'",
             "version": "==4.57.0"
         },
+        "hijri-converter": {
+            "hashes": [
+                "sha256:51124b40b27d072c402a4eeea1a368dd3952992f250109117292c8ecf9c66f28",
+                "sha256:986657ccd83a5beaf233ce5a219645747e885c45d4833bd2a8fa1b927fa39570"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==2.3.2.post1"
+        },
+        "hijridate": {
+            "hashes": [
+                "sha256:de59a435cf2598dcee2dc028a34cd9b17d1fa2f35379b32efca70ab81462edfa",
+                "sha256:f0d96619dc91dd792ae6b28159b6973a7b4b8a15017106f4cbcd11825549d4af"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==2.3.0"
+        },
         "holidays": {
             "hashes": [
-                "sha256:74eb0bd07db862c5b108d5e42cbd33c37ea066a2e8dc54f4858dd3cceef5ee8b",
-                "sha256:cbe5f3b862474b8f6e5f7ee423f17f3ebd7836fcc74b38540f97b27a7f92dca7"
+                "sha256:c6f7c3ab8ada94806702da931d94d37cd61bcfa92cb4d39d351b6a9c5210675c",
+                "sha256:ca944d20762f027770ceae2f21d037f959c9b206afe92db97161ce78538c275e"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==0.58"
+            "index": "pypi",
+            "markers": "python_version >= '3.6'",
+            "version": "==0.13"
         },
         "idna": {
             "hashes": [
@@ -569,6 +586,14 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==1.4.7"
+        },
+        "korean-lunar-calendar": {
+            "hashes": [
+                "sha256:be56f27bc0594fdbbdf7bbe00f504a9f929a31e311bd7d9bb93561b645afade7",
+                "sha256:c042e20de0bb702add6bec8d0f6da1ea8d3b170838e63846f70420cf341fe4e7"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==0.4.0"
         },
         "kubernetes": {
             "hashes": [

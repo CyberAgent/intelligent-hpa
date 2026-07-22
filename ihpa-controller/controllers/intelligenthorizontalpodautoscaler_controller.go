@@ -73,11 +73,6 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(req ctrl.Reques
 	log := r.Log.WithValues("intelligenthorizontalpodautoscaler", req.NamespacedName)
 	ihpaNamespacedName := req.NamespacedName.String()
 
-	// TODO: (low) fetch datadog key from env
-	// TODO: (low) determine sum/min/max/count/avg from IHPA property
-	// TODO: (low) consider selector of hpa object type
-	// TODO: (low) write any status to configmap
-
 	var ihpa ihpav1beta2.IntelligentHorizontalPodAutoscaler
 	if err := r.Get(ctx, req.NamespacedName, &ihpa); err != nil {
 		log.V(ResourceMessageLogLevel).Info("failed to fetch IntelligentHorizontalPodAutoscaler", "error_message", err)

@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	amtypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ihpaGeneratorImpl struct {
@@ -63,7 +64,52 @@ func NewIntelligentHorizontalPodAutoscalerGenerator(
 	}
 	rl := *totalResourceList(containers)
 
+	// Resolve Datadog API/APP keys from Secrets/ConfigMaps if KeysFrom is specified
+	if ihpa.Spec.MetricProvider.ProviderSource.Datadog != nil && len(ihpa.Spec.MetricProvider.ProviderSource.Datadog.KeysFrom) > 0 {
+		if err := resolveDatadogKeysFromEnv(ctx, r, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.ProviderSource.Datadog); err != nil {
+			return nil, fmt.Errorf("failed to resolve datadog keys from env: %w", err)
+		}
+	}
+
 	return &ihpaGeneratorImpl{ihpa: ihpa, scaleTargetRequests: rl, kubeSystemUID: string(kubeSystemNS.GetUID())}, nil
+}
+
+// resolveDatadogKeysFromEnv resolves APIKey and APPKey from Secrets or ConfigMaps
+// specified in KeysFrom. It searches for keys named "APIKey" and "APPKey".
+func resolveDatadogKeysFromEnv(ctx context.Context, r client.Client, namespace string, datadog *ihpav1beta2.DatadogProviderSource) error {
+	for _, envFrom := range datadog.KeysFrom {
+		if envFrom.SecretRef != nil {
+			secret := &corev1.Secret{}
+			if err := r.Get(ctx, amtypes.NamespacedName{Namespace: namespace, Name: envFrom.SecretRef.Name}, secret); err != nil {
+				if envFrom.SecretRef.Optional != nil && *envFrom.SecretRef.Optional {
+					continue
+				}
+				return fmt.Errorf("failed to get secret %s: %w", envFrom.SecretRef.Name, err)
+			}
+			if apiKey, ok := secret.Data["APIKey"]; ok {
+				datadog.APIKey = string(apiKey)
+			}
+			if appKey, ok := secret.Data["APPKey"]; ok {
+				datadog.APPKey = string(appKey)
+			}
+		}
+		if envFrom.ConfigMapRef != nil {
+			cm := &corev1.ConfigMap{}
+			if err := r.Get(ctx, amtypes.NamespacedName{Namespace: namespace, Name: envFrom.ConfigMapRef.Name}, cm); err != nil {
+				if envFrom.ConfigMapRef.Optional != nil && *envFrom.ConfigMapRef.Optional {
+					continue
+				}
+				return fmt.Errorf("failed to get configmap %s: %w", envFrom.ConfigMapRef.Name, err)
+			}
+			if apiKey, ok := cm.Data["APIKey"]; ok {
+				datadog.APIKey = apiKey
+			}
+			if appKey, ok := cm.Data["APPKey"]; ok {
+				datadog.APPKey = appKey
+			}
+		}
+	}
+	return nil
 }
 
 // HorizontalPodAutoscalerResource returns an HPA resource which forecasted metrics is added to.

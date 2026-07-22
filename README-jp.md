@@ -126,6 +126,11 @@ spec:
     datadog:
       apikey: xxx
       appkey: yyy
+      # SecretまたはConfigMapからキーを参照することも可能です:
+      # keysFrom:
+      #   - secretRef:
+      #       name: datadog-keys
+      # Secret/ConfigMapには "APIKey" と "APPKey" というキーを含める必要があります
   template:
     spec:
       scaleTargetRef:

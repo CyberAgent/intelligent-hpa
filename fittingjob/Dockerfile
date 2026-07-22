@@ -5,9 +5,10 @@ WORKDIR /app
 COPY ./Pipfile /app/Pipfile
 COPY ./Pipfile.lock /app/Pipfile.lock
 RUN pip install pipenv
-# Install build dependencies first as fbprophet requires them during build
-RUN pip install numpy cython pandas convertdate lunarcalendar holidays matplotlib statsmodels python-dateutil
-RUN pipenv install --system
+# Install all dependencies except fbprophet first, then install fbprophet
+# (fbprophet requires its dependencies during build)
+RUN python -c "import json; f=open('Pipfile.lock'); l=json.load(f); f.close(); [print(k+v['version']) for k,v in l['default'].items() if k!='fbprophet']" > /tmp/reqs.txt && pip install -r /tmp/reqs.txt
+RUN pip install fbprophet==0.7.1
 
 COPY ./ /app/
 

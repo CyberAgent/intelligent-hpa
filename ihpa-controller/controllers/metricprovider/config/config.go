@@ -23,7 +23,10 @@ func ConvertMetricProvider(mp *ihpav1beta2.MetricProvider) *MetricProviderConfig
 		}
 		metricProvider.Datadog = &datadog
 	} else if mp.ProviderSource.Prometheus != nil {
-		prometheus := prometheusmp.Prometheus{}
+		prometheus := prometheusmp.Prometheus{
+			URL:           mp.ProviderSource.Prometheus.URL,
+			PushgatewayURL: mp.ProviderSource.Prometheus.PushgatewayURL,
+		}
 		metricProvider.Prometheus = &prometheus
 	}
 	return &metricProvider

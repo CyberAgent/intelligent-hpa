@@ -138,6 +138,15 @@ spec:
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
+                    properties:
+                      pushgatewayUrl:
+                        description: PushgatewayURL is the address of the Prometheus
+                          Pushgateway for sending metrics.
+                        type: string
+                      url:
+                        description: URL is the address of the Prometheus server for
+                          querying metrics.
+                        type: string
                     type: object
                 type: object
             required:
@@ -385,6 +394,15 @@ spec:
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
+                    properties:
+                      pushgatewayUrl:
+                        description: PushgatewayURL is the address of the Prometheus
+                          Pushgateway for sending metrics.
+                        type: string
+                      url:
+                        description: URL is the address of the Prometheus server for
+                          querying metrics.
+                        type: string
                     type: object
                 type: object
               seasonality:
@@ -8007,6 +8025,15 @@ spec:
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
+                    properties:
+                      pushgatewayUrl:
+                        description: PushgatewayURL is the address of the Prometheus
+                          Pushgateway for sending metrics.
+                        type: string
+                      url:
+                        description: URL is the address of the Prometheus server for
+                          querying metrics.
+                        type: string
                     type: object
                 type: object
               resources:
@@ -9521,6 +9548,15 @@ spec:
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
+                    properties:
+                      pushgatewayUrl:
+                        description: PushgatewayURL is the address of the Prometheus
+                          Pushgateway for sending metrics.
+                        type: string
+                      url:
+                        description: URL is the address of the Prometheus server for
+                          querying metrics.
+                        type: string
                     type: object
                 type: object
               template:
@@ -10129,6 +10165,15 @@ spec:
                   prometheus:
                     description: PrometheusProviderSource defines parameters for accessing
                       Prometheus.
+                    properties:
+                      pushgatewayUrl:
+                        description: PushgatewayURL is the address of the Prometheus
+                          Pushgateway for sending metrics.
+                        type: string
+                      url:
+                        description: URL is the address of the Prometheus server for
+                          querying metrics.
+                        type: string
                     type: object
                 type: object
               template:

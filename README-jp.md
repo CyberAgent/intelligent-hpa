@@ -44,7 +44,18 @@ kubectl patch ds <your_datadog_agent> -p "{\"spec\":{\"template\":{\"spec\":{\"c
 
 ### Prometheus
 
-いつか
+IHPAはメトリクスプロバイダとしてPrometheusをサポートしています。`metricProvider`セクションに`prometheus`プロバイダソースを設定します：
+
+```yaml
+metricProvider:
+  name: prometheus
+  prometheus:
+    url: "http://prometheus-server:9090"
+    pushgatewayUrl: "http://prometheus-pushgateway:9091"
+```
+
+- `url`: メトリクスのクエリに使用するPrometheusサーバーのURL
+- `pushgatewayUrl`: 予測メトリクスの送信に使用するPrometheus PushgatewayのURL
 
 ## Usage
 
@@ -65,7 +76,7 @@ Intelligent HPA のマニフェストについて説明します。
         - 許容値: `adjust`, `raw` (default: `adjust`)
 - `metricProvider`
     - メトリクスを取得・送信するプロバイダを設定します
-    - 現在は Datadog のみ対応しています
+    - Datadog と Prometheus に対応しています
 - `template`
     - HPA のマニフェストを記述します
     - HPA から移行する場合はそのままここにコピーしてください

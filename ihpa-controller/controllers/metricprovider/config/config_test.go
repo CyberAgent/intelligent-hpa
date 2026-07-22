@@ -29,11 +29,17 @@ func TestConvertMetricProvider(t *testing.T) {
 			input: &ihpav1beta2.MetricProvider{
 				Name: "prometheus",
 				ProviderSource: ihpav1beta2.ProviderSource{
-					Prometheus: &ihpav1beta2.PrometheusProviderSource{},
+					Prometheus: &ihpav1beta2.PrometheusProviderSource{
+						URL:            "http://prometheus:9090",
+						PushgatewayURL: "http://pushgateway:9091",
+					},
 				},
 			},
 			expected: &MetricProviderConfig{
-				Prometheus: &prometheusmp.Prometheus{},
+				Prometheus: &prometheusmp.Prometheus{
+					URL:            "http://prometheus:9090",
+					PushgatewayURL: "http://pushgateway:9091",
+				},
 			},
 		},
 	}

@@ -168,7 +168,13 @@ type DatadogProviderSource struct {
 }
 
 // PrometheusProviderSource defines parameters for accessing Prometheus.
-type PrometheusProviderSource struct{}
+type PrometheusProviderSource struct {
+	// URL is the address of the Prometheus server for querying metrics.
+	URL string `json:"url,omitempty"`
+
+	// PushgatewayURL is the address of the Prometheus Pushgateway for sending metrics.
+	PushgatewayURL string `json:"pushgatewayUrl,omitempty"`
+}
 
 // IntelligentHorizontalPodAutoscalerStatus defines the observed state of IntelligentHorizontalPodAutoscaler
 type IntelligentHorizontalPodAutoscalerStatus struct {

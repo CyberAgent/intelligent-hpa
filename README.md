@@ -46,7 +46,18 @@ kubectl patch ds <your_datadog_agent> -p "{\"spec\":{\"template\":{\"spec\":{\"c
 
 ### Prometheus
 
-not yet implemented
+IHPA supports Prometheus as a metric provider. Configure the `metricProvider` section with `prometheus` provider source:
+
+```yaml
+metricProvider:
+  name: prometheus
+  prometheus:
+    url: "http://prometheus-server:9090"
+    pushgatewayUrl: "http://prometheus-pushgateway:9091"
+```
+
+- `url`: Prometheus server URL for querying metrics
+- `pushgatewayUrl`: Prometheus Pushgateway URL for sending forecast metrics
 
 ## Usage
 
@@ -67,7 +78,7 @@ IHPA manifest has some field below:
         - Allowable: `adjust`, `raw` (default: `adjust`)
 - `metricProvider`
     - Provider for sending and fetching metrics
-    - Only Datadog is supported now
+    - Datadog and Prometheus are supported
 - `template`
     - Almost same template as HorizontalPodAutoscaler
     - You can copy/paste HPA manifests to this field

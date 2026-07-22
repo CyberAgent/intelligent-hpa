@@ -209,7 +209,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2be
 		}
 		// clear utilization field
 		metricTarget.AverageUtilization = nil
-	} else if metric.Type == "External" {
+	} else if metric.Type == "External" || metric.Type == "Object" || metric.Type == "Pods" {
 		switch metricTarget.Type {
 		case "AverageValue":
 			avgValue = metricTarget.AverageValue.DeepCopy()
@@ -293,7 +293,7 @@ func (g *ihpaGeneratorImpl) fittingJobResource(metric *ihpav1beta2.ExtendedMetri
 }
 
 // convertMetricSpecToIdentifier convert metric name to special name which is dedicated to metric provider.
-// Currently, Resource and External are supported only.
+// Resource, External, Object, and Pods metric types are supported.
 // For example, "cpu" in Resource is convert to "kubernetes.cpu.usage.total" in Datadog.
 func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2beta2.MetricSpec) (*autoscalingv2beta2.MetricIdentifier, error) {
 	metricIdentifier := &autoscalingv2beta2.MetricIdentifier{}
@@ -301,12 +301,19 @@ func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2b
 	case "Resource":
 		mp := mpconfig.ConvertMetricProvider(g.ihpa.Spec.MetricProvider.DeepCopy()).ActiveProvider()
 		mi := mp.ConvertResourceMetricName(metric.Resource.Name.String(), false)
+		if mi == nil {
+			return nil, fmt.Errorf("correspond metric name is not found for resource metric: %s", metric.Resource.Name.String())
+		}
 		filters := g.uniqueMetricFilters()
 
 		metricIdentifier.Name = mi.GetName()
 		metricIdentifier.Selector = &metav1.LabelSelector{MatchLabels: filters}
 	case "External":
 		metricIdentifier = metric.External.Metric.DeepCopy()
+	case "Object":
+		metricIdentifier = metric.Object.Metric.DeepCopy()
+	case "Pods":
+		metricIdentifier = metric.Pods.Metric.DeepCopy()
 	default:
 		return nil, fmt.Errorf("%s metric is not supported yet.", metric.Type)
 	}

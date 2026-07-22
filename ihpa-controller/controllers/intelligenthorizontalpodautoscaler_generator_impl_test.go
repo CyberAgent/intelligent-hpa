@@ -1320,7 +1320,27 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 					},
 				},
 			},
-			expected: nil,
+			expected: &autoscalingv2beta2.MetricIdentifier{
+				Name: "requests-per-second",
+			},
+		},
+		{
+			generator: sample2,
+			metric: &autoscalingv2beta2.MetricSpec{
+				Type: "Pods",
+				Pods: &autoscalingv2beta2.PodsMetricSource{
+					Metric: autoscalingv2beta2.MetricIdentifier{
+						Name: "packets-per-second",
+					},
+					Target: autoscalingv2beta2.MetricTarget{
+						Type:         "AverageValue",
+						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
+					},
+				},
+			},
+			expected: &autoscalingv2beta2.MetricIdentifier{
+				Name: "packets-per-second",
+			},
 		},
 	}
 

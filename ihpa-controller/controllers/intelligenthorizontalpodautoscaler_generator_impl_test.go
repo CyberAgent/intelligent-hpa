@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -11,6 +12,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorImpl) {
@@ -1560,5 +1563,191 @@ func TestIhpaString(t *testing.T) {
 		if got != tt.expected {
 			t.Fatalf("ihpaString is not match (got=%s, exp=%s)", got, tt.expected)
 		}
+	}
+}
+
+func TestResolveDatadogKeysFromEnv(t *testing.T) {
+	tests := []struct {
+		name        string
+		namespace   string
+		datadog     *ihpav1beta2.DatadogProviderSource
+		secrets     []runtime.Object
+		configMaps  []runtime.Object
+		expectAPI   string
+		expectAPP   string
+		expectError bool
+	}{
+		{
+			name:      "resolve keys from secret",
+			namespace: "default",
+			datadog: &ihpav1beta2.DatadogProviderSource{
+				KeysFrom: []corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "datadog-keys"},
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Name: "datadog-keys", Namespace: "default"},
+					Data: map[string][]byte{
+						"APIKey": []byte("secret-api-key"),
+						"APPKey": []byte("secret-app-key"),
+					},
+				},
+			},
+			expectAPI: "secret-api-key",
+			expectAPP: "secret-app-key",
+		},
+		{
+			name:      "resolve keys from configmap",
+			namespace: "default",
+			datadog: &ihpav1beta2.DatadogProviderSource{
+				KeysFrom: []corev1.EnvFromSource{
+					{
+						ConfigMapRef: &corev1.ConfigMapEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "datadog-keys-cm"},
+						},
+					},
+				},
+			},
+			configMaps: []runtime.Object{
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{Name: "datadog-keys-cm", Namespace: "default"},
+					Data: map[string]string{
+						"APIKey": "cm-api-key",
+						"APPKey": "cm-app-key",
+					},
+				},
+			},
+			expectAPI: "cm-api-key",
+			expectAPP: "cm-app-key",
+		},
+		{
+			name:      "resolve keys from secret with prefix",
+			namespace: "default",
+			datadog: &ihpav1beta2.DatadogProviderSource{
+				KeysFrom: []corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "dd-keys"},
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Name: "dd-keys", Namespace: "default"},
+					Data: map[string][]byte{
+						"APIKey": []byte("api-from-secret"),
+					},
+				},
+			},
+			expectAPI: "api-from-secret",
+			expectAPP: "",
+		},
+		{
+			name:      "optional secret not found is skipped",
+			namespace: "default",
+			datadog: &ihpav1beta2.DatadogProviderSource{
+				KeysFrom: []corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "nonexistent"},
+							Optional:             func(b bool) *bool { return &b }(true),
+						},
+					},
+				},
+			},
+			expectAPI: "",
+			expectAPP: "",
+		},
+		{
+			name:      "required secret not found returns error",
+			namespace: "default",
+			datadog: &ihpav1beta2.DatadogProviderSource{
+				KeysFrom: []corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "nonexistent"},
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:      "multiple sources - secret overrides configmap",
+			namespace: "default",
+			datadog: &ihpav1beta2.DatadogProviderSource{
+				KeysFrom: []corev1.EnvFromSource{
+					{
+						ConfigMapRef: &corev1.ConfigMapEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "cm-keys"},
+						},
+					},
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "secret-keys"},
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Name: "secret-keys", Namespace: "default"},
+					Data: map[string][]byte{
+						"APIKey": []byte("final-api-key"),
+						"APPKey": []byte("final-app-key"),
+					},
+				},
+			},
+			configMaps: []runtime.Object{
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{Name: "cm-keys", Namespace: "default"},
+					Data: map[string]string{
+						"APIKey": "initial-api-key",
+						"APPKey": "initial-app-key",
+					},
+				},
+			},
+			expectAPI: "final-api-key",
+			expectAPP: "final-app-key",
+		},
+		{
+			name:      "no keysFrom - no change",
+			namespace: "default",
+			datadog: &ihpav1beta2.DatadogProviderSource{
+				APIKey: "original-api",
+				APPKey: "original-app",
+			},
+			expectAPI: "original-api",
+			expectAPP: "original-app",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			objs := append(tt.secrets, tt.configMaps...)
+			c := fake.NewFakeClient(objs...)
+			err := resolveDatadogKeysFromEnv(context.Background(), c, tt.namespace, tt.datadog)
+			if tt.expectError {
+				if err == nil {
+					t.Fatal("expected error but got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.datadog.APIKey != tt.expectAPI {
+				t.Fatalf("APIKey mismatch: got=%s, exp=%s", tt.datadog.APIKey, tt.expectAPI)
+			}
+			if tt.datadog.APPKey != tt.expectAPP {
+				t.Fatalf("APPKey mismatch: got=%s, exp=%s", tt.datadog.APPKey, tt.expectAPP)
+			}
+		})
 	}
 }

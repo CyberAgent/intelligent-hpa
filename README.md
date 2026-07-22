@@ -127,6 +127,11 @@ spec:
     datadog:
       apikey: xxx
       appkey: yyy
+      # Alternatively, you can reference keys from a Secret or ConfigMap:
+      # keysFrom:
+      #   - secretRef:
+      #       name: datadog-keys
+      # The Secret/ConfigMap must contain keys named "APIKey" and "APPKey".
   template:
     spec:
       scaleTargetRef:

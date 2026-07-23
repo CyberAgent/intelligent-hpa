@@ -6,14 +6,14 @@ REGISTRY?=ghcr.io/cyberagent/intelligent-hpa
 FITTINGJOB_IMAGE=$(REGISTRY)/intelligent-hpa-fittingjob
 CONTROLLER_IMAGE=$(REGISTRY)/intelligent-hpa-controller
 
+# Platforms for multi-arch builds
+PLATFORMS ?= linux/amd64,linux/arm64
+
 fittingjob:
-	docker build -t $(FITTINGJOB_IMAGE):$(COMMIT_HASH) ./fittingjob
-	docker push $(FITTINGJOB_IMAGE):$(COMMIT_HASH)
+	docker buildx build --platform $(PLATFORMS) -t $(FITTINGJOB_IMAGE):$(COMMIT_HASH) --push ./fittingjob
 
 controller:
-	make -C ihpa-controller docker-build
-	docker tag controller:latest $(CONTROLLER_IMAGE):$(COMMIT_HASH)
-	docker push $(CONTROLLER_IMAGE):$(COMMIT_HASH)
+	docker buildx build --platform $(PLATFORMS) -t $(CONTROLLER_IMAGE):$(COMMIT_HASH) --push ./ihpa-controller
 
 manifest:
 	cd ihpa-controller && make manifests

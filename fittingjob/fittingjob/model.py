@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import hashlib
 import pickle
 
 from fbprophet import Prophet, diagnostics
@@ -51,17 +52,36 @@ class IHPAModel:
         selected.drop(columns='ds')
         return selected
 
-    def dump(self, path: str):
-        # TODO: return file md5 hash and
-        #       check the integrity of the model when loading
+    def dump(self, path: str) -> str:
+        """Dump the model to a file and return its MD5 hash."""
         with open(path, mode='wb') as f:
             pickle.dump(self, f)
+        return self.__file_md5(path)
 
-    def load(self, path: str):
+    def load(self, path: str, expected_md5: str = None):
+        """Load the model from a file.
+
+        If expected_md5 is provided, the file integrity is verified
+        before loading. A ValueError is raised if the hash does not match.
+        """
+        if expected_md5 is not None:
+            actual_md5 = self.__file_md5(path)
+            if actual_md5 != expected_md5:
+                raise ValueError(
+                    f'md5 hash mismatch: expected={expected_md5}, actual={actual_md5}')
         with open(path, mode='rb') as f:
             m = pickle.load(f)
         self.model = m.model
         self.train = m.train
+
+    @staticmethod
+    def __file_md5(path: str) -> str:
+        """Compute the MD5 hash of a file."""
+        h = hashlib.md5()
+        with open(path, mode='rb') as f:
+            for chunk in iter(lambda: f.read(8192), b''):
+                h.update(chunk)
+        return h.hexdigest()
 
     def cross_validation(
             self,

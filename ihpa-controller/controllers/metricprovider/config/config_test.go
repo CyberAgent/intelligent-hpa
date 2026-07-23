@@ -89,3 +89,83 @@ func TestConvertMetricProvider(t *testing.T) {
 		})
 	}
 }
+
+func TestActiveProvider(t *testing.T) {
+	tests := []struct {
+		name     string
+		mp       *MetricProviderConfig
+		isNil    bool
+	}{
+		{
+			name: "datadog provider",
+			mp: &MetricProviderConfig{
+				Datadog: &datadogmp.Datadog{APIKey: "xxx", APPKey: "yyy"},
+			},
+			isNil: false,
+		},
+		{
+			name: "prometheus provider",
+			mp: &MetricProviderConfig{
+				Prometheus: &prometheusmp.Prometheus{URL: "http://prometheus:9090"},
+			},
+			isNil: false,
+		},
+		{
+			name:  "no provider",
+			mp:    &MetricProviderConfig{},
+			isNil: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.mp.ActiveProvider()
+			if tt.isNil && got != nil {
+				t.Fatalf("expected nil, got %v", got)
+			}
+			if !tt.isNil && got == nil {
+				t.Fatalf("expected non-nil, got nil")
+			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		mp      *MetricProviderConfig
+		wantErr bool
+	}{
+		{
+			name: "datadog provider valid",
+			mp: &MetricProviderConfig{
+				Datadog: &datadogmp.Datadog{APIKey: "xxx", APPKey: "yyy"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "prometheus provider valid",
+			mp: &MetricProviderConfig{
+				Prometheus: &prometheusmp.Prometheus{URL: "http://prometheus:9090"},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no provider invalid",
+			mp:      &MetricProviderConfig{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.mp.Validate()
+			if tt.wantErr && err == nil {
+				t.Fatalf("expected error, got nil")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+		})
+	}
+}

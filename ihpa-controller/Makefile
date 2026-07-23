@@ -58,6 +58,11 @@ generate: controller-gen
 docker-build: test
 	docker build . -t ${IMG}
 
+# Build and push a multi-arch image
+PLATFORMS ?= linux/amd64,linux/arm64
+docker-buildx: test
+	docker buildx build --platform $(PLATFORMS) -t ${IMG} --push .
+
 # Push the docker image
 docker-push:
 	docker push ${IMG}
@@ -78,3 +83,5 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+.PHONY: all test manager run install uninstall deploy manifests fmt vet generate docker-build docker-buildx docker-push controller-gen

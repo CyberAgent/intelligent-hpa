@@ -454,6 +454,51 @@ func (g *ihpaGeneratorImpl) RBACResources() (*corev1.ServiceAccount, *rbacv1.Rol
 	return &sa, &role, &roleBinding, nil
 }
 
+// StatusConfigMapResource generate a ConfigMap that contains status information
+// about the reconciled IHPA resources (HPA, FittingJobs, Estimators).
+// This ConfigMap is updated at the end of each reconcile loop for observability.
+func (g *ihpaGeneratorImpl) StatusConfigMapResource() (*corev1.ConfigMap, error) {
+	fittingJobResources, err := g.FittingJobResources()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate fittingjob resources for status: %w", err)
+	}
+	estimatorResources, err := g.EstimatorResources()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate estimator resources for status: %w", err)
+	}
+
+	fittingJobNames := make([]string, 0, len(fittingJobResources))
+	for _, fj := range fittingJobResources {
+		if fj != nil {
+			fittingJobNames = append(fittingJobNames, fj.GetName())
+		}
+	}
+	estimatorNames := make([]string, 0, len(estimatorResources))
+	for _, est := range estimatorResources {
+		if est != nil {
+			estimatorNames = append(estimatorNames, est.GetName())
+		}
+	}
+
+	data := map[string]string{
+		"hpaName":        g.hpaName(),
+		"fittingJobNames": strings.Join(fittingJobNames, ","),
+		"estimatorNames": strings.Join(estimatorNames, ","),
+	}
+
+	cm := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      g.statusConfigMapName(),
+			Namespace: g.ihpa.GetNamespace(),
+		},
+		Data: data,
+	}
+
+	addOwnerReference(&(g.ihpa.TypeMeta), &(g.ihpa.ObjectMeta), &cm)
+
+	return &cm, nil
+}
+
 // uniqueMetricID return identifier for a metric. This ID is used for
 // identification each fittingjob.
 func (g *ihpaGeneratorImpl) uniqueMetricID(metric *autoscalingv2beta2.MetricSpec) string {
@@ -524,6 +569,9 @@ func (g *ihpaGeneratorImpl) ihpaString() string {
 
 func (g *ihpaGeneratorImpl) hpaName() string  { return g.ihpaString() }
 func (g *ihpaGeneratorImpl) rbacName() string { return g.ihpaString() }
+func (g *ihpaGeneratorImpl) statusConfigMapName() string {
+	return sanitizeForKubernetesResourceName(g.ihpaString() + "-status")
+}
 func (g *ihpaGeneratorImpl) configMapName(metric *ihpav1beta2.ExtendedMetricSpec) string {
 	return g.ihpaMetricString(metric.MetricSpec())
 }

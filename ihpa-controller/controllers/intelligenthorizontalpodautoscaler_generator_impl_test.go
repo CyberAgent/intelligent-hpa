@@ -1152,6 +1152,90 @@ func TestRBACResources(t *testing.T) {
 	}
 }
 
+func TestStatusConfigMapResource(t *testing.T) {
+	sample1, sample2 := testIHPAGeneratorSample(t)
+	tests := []struct {
+		name      string
+		generator *ihpaGeneratorImpl
+		expected  *corev1.ConfigMap
+	}{
+		{
+			name:      "sample1",
+			generator: sample1,
+			expected: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ihpa-sample1-status",
+					Namespace: "default",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
+							Controller:         func(b bool) *bool { return &b }(true),
+							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						},
+					},
+				},
+				Data: map[string]string{
+					"hpaName":         "ihpa-sample1",
+					"fittingJobNames": "ihpa-sample1-cpu",
+					"estimatorNames":  "ihpa-sample1-cpu",
+				},
+			},
+		},
+		{
+			name:      "sample2",
+			generator: sample2,
+			expected: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ihpa-sample2-status",
+					Namespace: "web",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
+							Controller:         func(b bool) *bool { return &b }(true),
+							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample2",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						},
+					},
+				},
+				Data: map[string]string{
+					"hpaName":         "ihpa-sample2",
+					"fittingJobNames": "ihpa-sample2-cpu,ihpa-sample2-memory,ihpa-sample2-nginx-net-request-per-s",
+					"estimatorNames":  "ihpa-sample2-cpu,ihpa-sample2-memory,ihpa-sample2-nginx-net-request-per-s",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.generator.StatusConfigMapResource()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Name != tt.expected.Name {
+				t.Errorf("configmap name mismatch: got=%s, exp=%s", got.Name, tt.expected.Name)
+			}
+			if got.Namespace != tt.expected.Namespace {
+				t.Errorf("configmap namespace mismatch: got=%s, exp=%s", got.Namespace, tt.expected.Namespace)
+			}
+			if !reflect.DeepEqual(got.Data, tt.expected.Data) {
+				t.Errorf("configmap data mismatch:\ngot=%#v\nexp=%#v", got.Data, tt.expected.Data)
+			}
+			if len(got.OwnerReferences) != 1 {
+				t.Fatalf("expected 1 owner reference, got %d", len(got.OwnerReferences))
+			}
+			if got.OwnerReferences[0].Name != tt.expected.OwnerReferences[0].Name {
+				t.Errorf("owner reference name mismatch: got=%s, exp=%s", got.OwnerReferences[0].Name, tt.expected.OwnerReferences[0].Name)
+			}
+		})
+	}
+}
+
 func TestGenerateForecastedMetricSpec(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {

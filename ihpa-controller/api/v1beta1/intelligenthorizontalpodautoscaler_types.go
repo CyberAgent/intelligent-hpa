@@ -60,8 +60,9 @@ type HorizontalPodAutoscalerTemplateSpec struct {
 	Spec autoscalingv2beta2.HorizontalPodAutoscalerSpec `json:"spec,omitempty"`
 }
 
-// TODO: Use fittingJobSpec
-// FittingJobConfig describe base config for fittingJob
+// FittingJobConfig describe base config for fittingJob.
+// Deprecated: v1beta1 uses a single FittingJobConfig for all metrics.
+// In v1beta2, this is replaced by per-metric FittingJobPatchSpec.
 type FittingJobConfig struct {
 	// Seasonality is time span of bunch metrics period.
 	// This is defined as "daily", "weekly", "yearly", "auto".

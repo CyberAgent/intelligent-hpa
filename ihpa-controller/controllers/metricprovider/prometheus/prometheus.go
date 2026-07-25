@@ -120,17 +120,31 @@ func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tag
 	return nil
 }
 
+// buildPromQL constructs a valid PromQL query from a (possibly aggregated)
+// metric name and label tags. When the metric name is wrapped by an
+// aggregator (e.g. "sum(metric)"), labels are applied to the inner metric
+// selector to produce valid PromQL: sum(metric{label="value"}).
+func buildPromQL(metricName string, tags []string) string {
+	if len(tags) == 0 {
+		return metricName
+	}
+	labelSelector := fmt.Sprintf("{%s}", convertTagsToPrometheusFormat(tags))
+	// If metricName is wrapped in an aggregator (e.g. "sum(metric)"),
+	// insert the label selector inside the parentheses.
+	if open := strings.Index(metricName, "("); open >= 0 && strings.HasSuffix(metricName, ")") {
+		inner := metricName[open+1 : len(metricName)-1]
+		return metricName[:open+1] + inner + labelSelector + ")"
+	}
+	return metricName + labelSelector
+}
+
 // Fetch queries a metric from Prometheus at the specified timestamp.
 func (p *Prometheus) Fetch(metricName string, timestamp int64, tags []string, opts map[string]interface{}) (float64, error) {
 	if p.URL == "" {
 		return 0.0, fmt.Errorf("prometheus URL is not configured")
 	}
 
-	// Build the PromQL query: metric_name{tag1="value1",tag2="value2"}
-	query := metricName
-	if len(tags) > 0 {
-		query = fmt.Sprintf("%s{%s}", metricName, convertTagsToPrometheusFormat(tags))
-	}
+	query := buildPromQL(metricName, tags)
 
 	params := url.Values{}
 	params.Set("query", query)

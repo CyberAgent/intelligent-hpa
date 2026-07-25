@@ -3,7 +3,7 @@ apiVersion: ihpa.ake.cyberagent.co.jp/v1beta2
 kind: IntelligentHorizontalPodAutoscaler
 metadata:
   name: nginx
-  namespace: kube-system
+  namespace: ihpa-test
 spec:
   estimator:
     gapMinutes: 10
@@ -29,7 +29,7 @@ spec:
             name: container_memory_working_set_bytes
             selector:
               matchLabels:
-                namespace: kube-system
+                namespace: ihpa-test
           target:
             type: AverageValue
             averageValue: "100000000"

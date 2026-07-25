@@ -66,13 +66,20 @@ class Prometheus(mp.MetricsProvider):
             print('no data returned from prometheus')
             return []
 
-        ms = []
+        # Aggregate values across multiple series by timestamp (sum).
+        # If the query returns multiple series (e.g. missing aggregation or
+        # grouping), this prevents mixing unrelated series together.
+        timestamp_values: Dict[int, float] = {}
         for series in result:
             for point in series.get('values', []):
                 ts = int(point[0])
                 val = float(point[1])
-                d = datetime.fromtimestamp(ts)
-                ms.append(mp.Metric(d, val))
+                timestamp_values[ts] = timestamp_values.get(ts, 0.0) + val
+
+        ms = []
+        for ts in sorted(timestamp_values):
+            d = datetime.fromtimestamp(ts)
+            ms.append(mp.Metric(d, timestamp_values[ts]))
 
         return ms
 

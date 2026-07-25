@@ -35,7 +35,7 @@ func TestPrometheusSend(t *testing.T) {
 		t.Fatalf("unexpected path: got=%s, exp=/metrics/job/estimator", receivedPath)
 	}
 
-	expectedBody := `ihpa.test.metric{tag1:value1,tag2:value2} 42.500000 1609459200` + "\n"
+	expectedBody := `ihpa_test_metric{tag1="value1",tag2="value2"} 42.500000` + "\n"
 	if receivedBody != expectedBody {
 		t.Fatalf("unexpected body: got=%q, exp=%q", receivedBody, expectedBody)
 	}
@@ -76,7 +76,7 @@ func TestPrometheusFetch(t *testing.T) {
 		}
 
 		query := r.URL.Query().Get("query")
-		expectedQuery := `container_cpu_usage_seconds_total{host:server1}`
+		expectedQuery := `container_cpu_usage_seconds_total{host="server1"}`
 		if query != expectedQuery {
 			t.Fatalf("unexpected query: got=%s, exp=%s", query, expectedQuery)
 		}

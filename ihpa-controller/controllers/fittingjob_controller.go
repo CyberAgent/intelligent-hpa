@@ -21,10 +21,11 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,20 +86,46 @@ func (r *FittingJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to generate cronjob resource: %w", err)
 	}
-	cj := &batchv1beta1.CronJob{}
-	if err := r.Get(ctx, types.NamespacedName{Namespace: cjResource.GetNamespace(), Name: cjResource.GetName()}, cj); apierrors.IsNotFound(err) {
+
+	// Convert v1beta1 CronJob to unstructured for batch/v1 compatibility
+	// (K8s 1.25+ removed batch/v1beta1, so we use batch/v1)
+	cjUnstructured := &unstructured.Unstructured{}
+	cjUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "batch",
+		Version: "v1",
+		Kind:    "CronJob",
+	})
+	cjUnstructured.SetNamespace(cjResource.GetNamespace())
+	cjUnstructured.SetName(cjResource.GetName())
+
+	if err := r.Get(ctx, types.NamespacedName{Namespace: cjResource.GetNamespace(), Name: cjResource.GetName()}, cjUnstructured); apierrors.IsNotFound(err) {
 		log.V(ResourceMessageLogLevel).Info("initialize cronjob", "name", cjResource.GetName())
-		cj = cjResource.DeepCopy()
-		if err := r.Create(ctx, cj); err != nil {
+		objMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(cjResource)
+		if convErr != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to convert cronjob to unstructured: %w", convErr)
+		}
+		cjUnstructured = &unstructured.Unstructured{Object: objMap}
+		cjUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "batch",
+			Version: "v1",
+			Kind:    "CronJob",
+		})
+		if err := r.Create(ctx, cjUnstructured); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to create cronjob: %w", err)
 		}
+	} else if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cronjob: %w", err)
 	} else {
-		cj.Spec = cjResource.DeepCopy().Spec
-		if err := r.Update(ctx, cj); err != nil {
+		specMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(&cjResource.Spec)
+		if convErr != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to convert cronjob spec to unstructured: %w", convErr)
+		}
+		cjUnstructured.Object["spec"] = specMap
+		if err := r.Update(ctx, cjUnstructured); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to update cronjob: %w", err)
 		}
 	}
-	log.V(ResourceMessageLogLevel).Info("successed to create/update cronjob", "kind", cj.GetObjectKind().GroupVersionKind(), "name", cj.GetName())
+	log.V(ResourceMessageLogLevel).Info("successed to create/update cronjob", "kind", cjUnstructured.GetObjectKind().GroupVersionKind(), "name", cjUnstructured.GetName())
 
 	return ctrl.Result{}, nil
 }

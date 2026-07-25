@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 
+import re
 import sys
 
 from fittingjob import model
 from fittingjob import config
 from fittingjob import configmap
 from fittingjob import metrics_provider as mp
+
+
+def _strip_aggregator(metric_name: str) -> str:
+    """Strip aggregation function prefix from metric name.
+
+    Handles both Datadog format (e.g. 'sum:metric.name') and
+    Prometheus format (e.g. 'sum(container_memory_working_set_bytes)').
+    """
+    match = re.match(r'^\w+[:\(](.+?)\)?$', metric_name)
+    if match:
+        return match.group(1)
+    return metric_name
 
 
 def run(config_path: str) -> int:
@@ -65,7 +78,7 @@ def run(config_path: str) -> int:
     configmap.store_dataframe_to_configmap(
         cfg.data_configmap_name,
         cfg.data_configmap_namespace,
-        cfg.target_metrics_name.lstrip('sum:'),
+        _strip_aggregator(cfg.target_metrics_name),
         forecasted_data,
     )
 

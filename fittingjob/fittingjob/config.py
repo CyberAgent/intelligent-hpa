@@ -5,6 +5,7 @@ from typing import Dict, List
 import yaml
 
 from fittingjob import datadog
+from fittingjob import prometheus
 from fittingjob import metrics_provider as mp
 
 
@@ -43,6 +44,12 @@ class Config:
                 return datadog.Datadog(
                     apikey=self.provider[name]['apikey'],
                     appkey=self.provider[name]['appkey']
+                )
+            elif name == 'prometheus':
+                return prometheus.Prometheus(
+                    url=self.provider[name]['url'],
+                    pushgateway_url=self.provider[name].get('pushgatewayUrl', ''),
+                    aggregation=self.provider[name].get('aggregation', '')
                 )
         return None
 

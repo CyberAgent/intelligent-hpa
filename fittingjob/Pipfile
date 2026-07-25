@@ -6,13 +6,10 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-fbprophet = "*"
+prophet = "*"
 pandas = "*"
 kubernetes = "*"
 pyyaml = "*"
-# Pin holidays to a version compatible with fbprophet 0.7.1
-# (holidays >= 0.14 introduced breaking API changes)
-holidays = ">=0.10.1,<0.14"
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"

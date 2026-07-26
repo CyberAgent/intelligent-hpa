@@ -3,7 +3,8 @@
 import hashlib
 import pickle
 
-from fbprophet import Prophet, diagnostics
+from prophet import Prophet
+from prophet.diagnostics import cross_validation as cross_validation_fn
 import numpy as np
 import pandas as pd
 
@@ -102,7 +103,7 @@ class IHPAModel:
         --+----+----+----+----+----+----+----+----+----+----+----+----+--
           12   13   14   15   16   17   18   19   20   21   22   23   24th day
         """
-        return diagnostics.cross_validation(
+        return cross_validation_fn(
             self.model, initial=initial, period=period, horizon=horizon)
 
 

@@ -35,7 +35,7 @@ func TestPrometheusSend(t *testing.T) {
 		t.Fatalf("unexpected path: got=%s, exp=/metrics/job/estimator", receivedPath)
 	}
 
-	expectedBody := `ihpa.test.metric{tag1:value1,tag2:value2} 42.500000 1609459200` + "\n"
+	expectedBody := `ihpa_test_metric{tag1="value1",tag2="value2"} 42.500000` + "\n"
 	if receivedBody != expectedBody {
 		t.Fatalf("unexpected body: got=%q, exp=%q", receivedBody, expectedBody)
 	}
@@ -76,7 +76,7 @@ func TestPrometheusFetch(t *testing.T) {
 		}
 
 		query := r.URL.Query().Get("query")
-		expectedQuery := `container_cpu_usage_seconds_total{host:server1}`
+		expectedQuery := `container_cpu_usage_seconds_total{host="server1"}`
 		if query != expectedQuery {
 			t.Fatalf("unexpected query: got=%s, exp=%s", query, expectedQuery)
 		}
@@ -118,6 +118,47 @@ func TestPrometheusFetch(t *testing.T) {
 	expected := 52.5
 	if val != expected {
 		t.Fatalf("unexpected value: got=%f, exp=%f", val, expected)
+	}
+}
+
+func TestPrometheusFetchWithAggregator(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("query")
+		// Labels must be applied to the inner metric, not outside the aggregator.
+		expectedQuery := `sum(container_cpu_usage_seconds_total{namespace="ihpa-test"})`
+		if query != expectedQuery {
+			t.Fatalf("unexpected query: got=%s, exp=%s", query, expectedQuery)
+		}
+
+		resp := queryResponse{
+			Status: "success",
+			Data: queryData{
+				ResultType: "vector",
+				Result: []queryResult{
+					{
+						Metric: map[string]string{"namespace": "ihpa-test"},
+						Value:  []interface{}{1609459200, "42.5"},
+					},
+				},
+			},
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	p := &Prometheus{
+		URL: server.URL,
+	}
+
+	// AddAggregator wraps the metric name as "sum(container_cpu_usage_seconds_total)".
+	aggregated := p.AddAggregator("container_cpu_usage_seconds_total")
+	val, err := p.Fetch(aggregated, 1609459200, []string{"namespace:ihpa-test"}, nil)
+	if err != nil {
+		t.Fatalf("Fetch failed: %v", err)
+	}
+
+	if val != 42.5 {
+		t.Fatalf("unexpected value: got=%f, exp=42.5", val)
 	}
 }
 

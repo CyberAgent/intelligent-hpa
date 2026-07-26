@@ -1,0 +1,48 @@
+---
+apiVersion: ihpa.ake.cyberagent.co.jp/v1beta2
+kind: IntelligentHorizontalPodAutoscaler
+metadata:
+  name: nginx
+  namespace: ihpa-test
+spec:
+  estimator:
+    gapMinutes: 10
+    mode: raw
+  metricProvider:
+    name: prometheus
+    prometheus:
+      url: http://prometheus-server.monitoring.svc.cluster.local:80
+      pushgatewayUrl: http://prometheus-prometheus-pushgateway.monitoring.svc.cluster.local:9091
+    aggregation: sum
+  template:
+    spec:
+      scaleTargetRef:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: nginx
+      minReplicas: 1
+      maxReplicas: 5
+      metrics:
+      - type: External
+        external:
+          metric:
+            name: container_memory_working_set_bytes
+            selector:
+              matchLabels:
+                namespace: ihpa-test
+          target:
+            type: AverageValue
+            averageValue: "100000000"
+        fittingJob:
+          seasonality: daily
+          executeOn: 4
+          image: cyberagentoss/intelligent-hpa-fittingjob:latest
+          imagePullPolicy: IfNotPresent
+          changePointDetectionConfig:
+            percentageThreshold: 50
+            windowSize: 100
+            trajectoryRows: 50
+            trajectoryFeatures: 5
+            testRows: 50
+            testFeatures: 5
+            lag: 288

@@ -23,11 +23,12 @@ import (
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
 	"github.com/go-logr/logr"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -96,20 +97,46 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(req ctrl.Reques
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to generate hpa resource: %w", err)
 	}
-	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{}
-	if err := r.Get(ctx, types.NamespacedName{Namespace: hpaResource.GetNamespace(), Name: hpaResource.GetName()}, hpa); apierrors.IsNotFound(err) {
+
+	// Convert v2beta2 HPA to unstructured for autoscaling/v2 compatibility
+	// (K8s 1.25+ removed autoscaling/v2beta2, so we use autoscaling/v2)
+	hpaUnstructured := &unstructured.Unstructured{}
+	hpaUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "autoscaling",
+		Version: "v2",
+		Kind:    "HorizontalPodAutoscaler",
+	})
+	hpaUnstructured.SetNamespace(hpaResource.GetNamespace())
+	hpaUnstructured.SetName(hpaResource.GetName())
+
+	if err := r.Get(ctx, types.NamespacedName{Namespace: hpaResource.GetNamespace(), Name: hpaResource.GetName()}, hpaUnstructured); apierrors.IsNotFound(err) {
 		log.V(ResourceMessageLogLevel).Info("initialize hpa", "name", hpaResource.GetName())
-		hpa = hpaResource.DeepCopy()
-		if err := r.Create(ctx, hpa); err != nil {
+		objMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(hpaResource)
+		if convErr != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to convert hpa to unstructured: %w", convErr)
+		}
+		hpaUnstructured = &unstructured.Unstructured{Object: objMap}
+		hpaUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "autoscaling",
+			Version: "v2",
+			Kind:    "HorizontalPodAutoscaler",
+		})
+		if err := r.Create(ctx, hpaUnstructured); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to create hpa: %w", err)
 		}
+	} else if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get hpa: %w", err)
 	} else {
-		hpa.Spec = hpaResource.DeepCopy().Spec
-		if err := r.Update(ctx, hpa); err != nil {
+		specMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(&hpaResource.Spec)
+		if convErr != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to convert hpa spec to unstructured: %w", convErr)
+		}
+		hpaUnstructured.Object["spec"] = specMap
+		if err := r.Update(ctx, hpaUnstructured); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to update hpa: %w", err)
 		}
 	}
-	log.V(ResourceMessageLogLevel).Info("successed to create/update hpa", "kind", hpa.GetObjectKind().GroupVersionKind(), "name", hpa.GetName())
+	log.V(ResourceMessageLogLevel).Info("successed to create/update hpa", "kind", hpaUnstructured.GetObjectKind().GroupVersionKind(), "name", hpaUnstructured.GetName())
 
 	// * create rbac resources
 	saResource, roleResource, roleBindingResource, err := g.RBACResources()

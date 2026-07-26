@@ -58,6 +58,28 @@ type queryResult struct {
 	Value  []interface{}     `json:"value"`
 }
 
+// convertTagsToPrometheusFormat converts tags from "key:value" format
+// (used internally by IHPA) to Prometheus label format "key=\"value\"".
+func convertTagsToPrometheusFormat(tags []string) string {
+	converted := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		parts := strings.SplitN(tag, ":", 2)
+		if len(parts) == 2 {
+			converted = append(converted, fmt.Sprintf("%s=\"%s\"", parts[0], parts[1]))
+		} else {
+			// Already in Prometheus format or unknown format, keep as-is
+			converted = append(converted, tag)
+		}
+	}
+	return strings.Join(converted, ",")
+}
+
+// sanitizeMetricNameForPrometheus replaces dots with underscores to make
+// the metric name valid in Prometheus (metric names must match [a-zA-Z_:][a-zA-Z0-9_:]*).
+func sanitizeMetricNameForPrometheus(metricName string) string {
+	return strings.ReplaceAll(metricName, ".", "_")
+}
+
 // Send sends a metric to Prometheus via Pushgateway.
 func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tags []string, opts map[string]interface{}) error {
 	if p.PushgatewayURL == "" {
@@ -67,10 +89,14 @@ func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tag
 	// Build the Pushgateway URL with job label
 	pushURL := strings.TrimSuffix(p.PushgatewayURL, "/") + PushPath + "/job/estimator"
 
+	// Sanitize metric name for Prometheus (dots are not allowed in metric names)
+	sanitizedMetricName := sanitizeMetricNameForPrometheus(metricName)
+
 	// Build the metric body in Prometheus text format
-	// Format: metric_name{tag1="value1",tag2="value2"} value timestamp
-	labels := strings.Join(tags, ",")
-	body := fmt.Sprintf("%s{%s} %f %d\n", metricName, labels, point, timestamp)
+	// Format: metric_name{tag1="value1",tag2="value2"} value
+	// Note: Pushgateway does not accept timestamps in pushed metrics.
+	labels := convertTagsToPrometheusFormat(tags)
+	body := fmt.Sprintf("%s{%s} %f\n", sanitizedMetricName, labels, point)
 
 	req, err := http.NewRequest(http.MethodPost, pushURL, strings.NewReader(body))
 	if err != nil {
@@ -94,17 +120,31 @@ func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tag
 	return nil
 }
 
+// buildPromQL constructs a valid PromQL query from a (possibly aggregated)
+// metric name and label tags. When the metric name is wrapped by an
+// aggregator (e.g. "sum(metric)"), labels are applied to the inner metric
+// selector to produce valid PromQL: sum(metric{label="value"}).
+func buildPromQL(metricName string, tags []string) string {
+	if len(tags) == 0 {
+		return metricName
+	}
+	labelSelector := fmt.Sprintf("{%s}", convertTagsToPrometheusFormat(tags))
+	// If metricName is wrapped in an aggregator (e.g. "sum(metric)"),
+	// insert the label selector inside the parentheses.
+	if open := strings.Index(metricName, "("); open >= 0 && strings.HasSuffix(metricName, ")") {
+		inner := metricName[open+1 : len(metricName)-1]
+		return metricName[:open+1] + inner + labelSelector + ")"
+	}
+	return metricName + labelSelector
+}
+
 // Fetch queries a metric from Prometheus at the specified timestamp.
 func (p *Prometheus) Fetch(metricName string, timestamp int64, tags []string, opts map[string]interface{}) (float64, error) {
 	if p.URL == "" {
 		return 0.0, fmt.Errorf("prometheus URL is not configured")
 	}
 
-	// Build the PromQL query: metric_name{tag1="value1",tag2="value2"}
-	query := metricName
-	if len(tags) > 0 {
-		query = fmt.Sprintf("%s{%s}", metricName, strings.Join(tags, ","))
-	}
+	query := buildPromQL(metricName, tags)
 
 	params := url.Values{}
 	params.Set("query", query)

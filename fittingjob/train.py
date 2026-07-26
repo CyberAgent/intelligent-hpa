@@ -6,6 +6,7 @@ from fittingjob import model
 from fittingjob import config
 from fittingjob import configmap
 from fittingjob import metrics_provider as mp
+from fittingjob.aggregator import strip_aggregator as _strip_aggregator
 
 
 def run(config_path: str) -> int:
@@ -65,7 +66,7 @@ def run(config_path: str) -> int:
     configmap.store_dataframe_to_configmap(
         cfg.data_configmap_name,
         cfg.data_configmap_namespace,
-        cfg.target_metrics_name.lstrip('sum:'),
+        _strip_aggregator(cfg.target_metrics_name),
         forecasted_data,
     )
 

@@ -32,6 +32,7 @@ def run(config_path: str) -> int:
     original_length = len(df)
     if original_length < 24*12:  # number of metrics over a day
         print(f'this prediction job is skipped (a few data: {original_length})')
+        return 0
 
     if cfg.change_point_detection is not None:
         print('change point detection...')

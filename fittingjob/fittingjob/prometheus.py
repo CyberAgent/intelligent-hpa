@@ -88,18 +88,32 @@ class Prometheus(mp.MetricsProvider):
         Build a PromQL query from the metric name and tags.
         The metric_name may already contain an aggregation function
         (e.g., "sum(container_cpu_usage_seconds_total)").
-        Tags are added inside the curly braces of the metric selector.
+        Labels are applied to the innermost metric selector, correctly
+        handling nested aggregators (e.g. "sum(rate(metric[5m]))") and
+        range-vectors (e.g. "rate(metric[5m])").
         """
         tags_str = tags_string(metrics_tags)
         if tags_str:
-            # If the metric_name contains an aggregation function like sum(...),
-            # we need to insert the tags inside the inner metric selector.
-            if '(' in metrics_name and metrics_name.endswith(')'):
-                inner = metrics_name[metrics_name.index('(') + 1:-1]
-                return f'{metrics_name[:metrics_name.index("(")]}({inner}{{{tags_str}}})'
-            else:
-                return f'{metrics_name}{{{tags_str}}}'
+            return self._insert_labels(metrics_name, '{' + tags_str + '}')
         return metrics_name
+
+    @staticmethod
+    def _insert_labels(expr: str, label_selector: str) -> str:
+        """
+        Recursively find the innermost metric selector and insert the label
+        selector before any range-vector suffix (e.g. [5m]).
+        """
+        # If the expression is wrapped in an aggregator (e.g. "sum(...)"),
+        # recurse into the inner expression.
+        if '(' in expr and expr.endswith(')'):
+            open_idx = expr.index('(')
+            inner = expr[open_idx + 1:-1]
+            return expr[:open_idx + 1] + Prometheus._insert_labels(inner, label_selector) + ')'
+        # At the innermost metric selector. Insert labels before any range-vector suffix.
+        if '[' in expr:
+            idx = expr.index('[')
+            return expr[:idx] + label_selector + expr[idx:]
+        return expr + label_selector
 
 
 def tags_string(tags: Dict[str, str]) -> str:

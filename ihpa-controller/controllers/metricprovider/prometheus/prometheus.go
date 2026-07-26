@@ -121,21 +121,31 @@ func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tag
 }
 
 // buildPromQL constructs a valid PromQL query from a (possibly aggregated)
-// metric name and label tags. When the metric name is wrapped by an
-// aggregator (e.g. "sum(metric)"), labels are applied to the inner metric
-// selector to produce valid PromQL: sum(metric{label="value"}).
+// metric name and label tags. Labels are applied to the innermost metric
+// selector, correctly handling nested aggregators (e.g. "sum(rate(metric[5m]))")
+// and range-vectors (e.g. "rate(metric[5m])").
 func buildPromQL(metricName string, tags []string) string {
 	if len(tags) == 0 {
 		return metricName
 	}
 	labelSelector := fmt.Sprintf("{%s}", convertTagsToPrometheusFormat(tags))
-	// If metricName is wrapped in an aggregator (e.g. "sum(metric)"),
-	// insert the label selector inside the parentheses.
-	if open := strings.Index(metricName, "("); open >= 0 && strings.HasSuffix(metricName, ")") {
-		inner := metricName[open+1 : len(metricName)-1]
-		return metricName[:open+1] + inner + labelSelector + ")"
+	return insertLabels(metricName, labelSelector)
+}
+
+// insertLabels recursively finds the innermost metric selector and inserts
+// the label selector before any range-vector suffix (e.g. [5m]).
+func insertLabels(expr string, labelSelector string) string {
+	// If the expression is wrapped in an aggregator (e.g. "sum(...)"),
+	// recurse into the inner expression.
+	if open := strings.Index(expr, "("); open >= 0 && strings.HasSuffix(expr, ")") {
+		inner := expr[open+1 : len(expr)-1]
+		return expr[:open+1] + insertLabels(inner, labelSelector) + ")"
 	}
-	return metricName + labelSelector
+	// At the innermost metric selector. Insert labels before any range-vector suffix.
+	if idx := strings.Index(expr, "["); idx >= 0 {
+		return expr[:idx] + labelSelector + expr[idx:]
+	}
+	return expr + labelSelector
 }
 
 // Fetch queries a metric from Prometheus at the specified timestamp.

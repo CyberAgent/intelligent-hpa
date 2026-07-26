@@ -162,6 +162,61 @@ func TestPrometheusFetchWithAggregator(t *testing.T) {
 	}
 }
 
+func TestBuildPromQL(t *testing.T) {
+	tests := []struct {
+		name       string
+		metricName string
+		tags       []string
+		expected   string
+	}{
+		{
+			name:       "plain metric with tags",
+			metricName: "container_cpu_usage_seconds_total",
+			tags:       []string{"namespace:ihpa-test"},
+			expected:   `container_cpu_usage_seconds_total{namespace="ihpa-test"}`,
+		},
+		{
+			name:       "aggregator with tags",
+			metricName: "sum(container_cpu_usage_seconds_total)",
+			tags:       []string{"namespace:ihpa-test"},
+			expected:   `sum(container_cpu_usage_seconds_total{namespace="ihpa-test"})`,
+		},
+		{
+			name:       "range vector with tags",
+			metricName: "rate(container_cpu_usage_seconds_total[5m])",
+			tags:       []string{"namespace:ihpa-test"},
+			expected:   `rate(container_cpu_usage_seconds_total{namespace="ihpa-test"}[5m])`,
+		},
+		{
+			name:       "nested aggregator with range vector",
+			metricName: "sum(rate(container_cpu_usage_seconds_total[5m]))",
+			tags:       []string{"namespace:ihpa-test"},
+			expected:   `sum(rate(container_cpu_usage_seconds_total{namespace="ihpa-test"}[5m]))`,
+		},
+		{
+			name:       "no tags returns metric as-is",
+			metricName: "container_cpu_usage_seconds_total",
+			tags:       nil,
+			expected:   "container_cpu_usage_seconds_total",
+		},
+		{
+			name:       "multiple tags",
+			metricName: "sum(container_memory_working_set_bytes)",
+			tags:       []string{"namespace:ihpa-test", "pod:nginx-abc"},
+			expected:   `sum(container_memory_working_set_bytes{namespace="ihpa-test",pod="nginx-abc"})`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildPromQL(tt.metricName, tt.tags)
+			if got != tt.expected {
+				t.Fatalf("buildPromQL(%q, %v) = %q, expected %q", tt.metricName, tt.tags, got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestPrometheusFetchNoURL(t *testing.T) {
 	p := &Prometheus{}
 

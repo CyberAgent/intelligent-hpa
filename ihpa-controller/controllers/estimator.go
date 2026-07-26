@@ -179,16 +179,11 @@ func estimatorHandler(opeCh <-chan *EstimateOperation, log logr.Logger) {
 					if err := et.updateEstimateTarget(patch); err != nil {
 						log.V(LogicMessageLogLevel).Info("update estimator error", "error_msg", err)
 					}
-
-						close(et.estimatorStopCh)
-						et.estimatorStopCh = make(chan struct{})
-						go et.estimator()
-						estimateTargets[i] = et
-
-						// break search loop, not handler loop
-						break
-					}
+					estimateTargets[i] = et
+					// break search loop, not handler loop
+					break
 				}
+			}
 
 			case EstimateRemove:
 				for i, et := range estimateTargets {

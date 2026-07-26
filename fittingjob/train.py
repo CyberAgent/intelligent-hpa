@@ -9,6 +9,7 @@ from fittingjob import metrics_provider as mp
 from fittingjob.aggregator import strip_aggregator as _strip_aggregator
 
 
+
 def run(config_path: str) -> int:
     cfg = config.load(config_path)
 
@@ -31,6 +32,7 @@ def run(config_path: str) -> int:
     original_length = len(df)
     if original_length < 24*12:  # number of metrics over a day
         print(f'this prediction job is skipped (a few data: {original_length})')
+        return 0
 
     if cfg.change_point_detection is not None:
         print('change point detection...')

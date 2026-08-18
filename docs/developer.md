@@ -2,7 +2,7 @@
 
 ## マニフェストの生成
 
-マニフェストを生成するときは下記のようにします。Namespace を `kube-system` で作るように設定していますが、マニフェストの先頭に `ihpa-system` という定義が追加されてしまうため不要なものを入れたくない場合は消してください。
+マニフェストを生成するときは下記のようにします。Namespace は `ihpa-controller-system` として作成され、マニフェストの先頭に Namespace リソースとして定義されます。
 
 ```bash
 IMG="cyberagentoss/intelligent-hpa-controller:latest"

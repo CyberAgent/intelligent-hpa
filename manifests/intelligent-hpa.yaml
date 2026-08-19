@@ -1,3 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: controller-manager
+    system: ihpa
+  name: ihpa-controller-system
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -13315,13 +13323,21 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    system: ihpa
+  name: ihpa-controller-manager
+  namespace: ihpa-controller-system
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
     system: ihpa
   name: ihpa-leader-election-role
-  namespace: kube-system
+  namespace: ihpa-controller-system
 rules:
 - apiGroups:
   - ""
@@ -13564,15 +13580,15 @@ metadata:
   labels:
     system: ihpa
   name: ihpa-leader-election-rolebinding
-  namespace: kube-system
+  namespace: ihpa-controller-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: ihpa-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: default
-  namespace: kube-system
+  name: ihpa-controller-manager
+  namespace: ihpa-controller-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -13586,8 +13602,8 @@ roleRef:
   name: ihpa-manager-role
 subjects:
 - kind: ServiceAccount
-  name: default
-  namespace: kube-system
+  name: ihpa-controller-manager
+  namespace: ihpa-controller-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -13601,8 +13617,8 @@ roleRef:
   name: ihpa-proxy-role
 subjects:
 - kind: ServiceAccount
-  name: default
-  namespace: kube-system
+  name: ihpa-controller-manager
+  namespace: ihpa-controller-system
 ---
 apiVersion: v1
 kind: Service
@@ -13611,7 +13627,7 @@ metadata:
     control-plane: controller-manager
     system: ihpa
   name: ihpa-controller-manager-metrics-service
-  namespace: kube-system
+  namespace: ihpa-controller-system
 spec:
   ports:
   - name: https
@@ -13628,7 +13644,7 @@ metadata:
     control-plane: controller-manager
     system: ihpa
   name: ihpa-controller-manager
-  namespace: kube-system
+  namespace: ihpa-controller-system
 spec:
   replicas: 1
   selector:
@@ -13666,4 +13682,5 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+      serviceAccountName: ihpa-controller-manager
       terminationGracePeriodSeconds: 10

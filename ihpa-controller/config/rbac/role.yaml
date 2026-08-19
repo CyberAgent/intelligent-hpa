@@ -1,11 +1,44 @@
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  - secrets/status
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
 - apiGroups:
   - apps
   resources:
@@ -51,99 +84,10 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - configmaps/status
-  verbs:
-  - get
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - secrets/status
-  verbs:
-  - get
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - ihpa.ake.cyberagent.co.jp
   resources:
   - estimators
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ihpa.ake.cyberagent.co.jp
-  resources:
-  - estimators/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - ihpa.ake.cyberagent.co.jp
-  resources:
   - fittingjobs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ihpa.ake.cyberagent.co.jp
-  resources:
-  - fittingjobs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - ihpa.ake.cyberagent.co.jp
-  resources:
   - intelligenthorizontalpodautoscalers
   verbs:
   - create
@@ -156,6 +100,8 @@ rules:
 - apiGroups:
   - ihpa.ake.cyberagent.co.jp
   resources:
+  - estimators/status
+  - fittingjobs/status
   - intelligenthorizontalpodautoscalers/status
   verbs:
   - get
@@ -165,17 +111,6 @@ rules:
   - rbac.authorization.k8s.io
   resources:
   - rolebindings
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
   - roles
   verbs:
   - create

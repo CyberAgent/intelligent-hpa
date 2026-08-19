@@ -1,8 +1,8 @@
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:crdVersions=v1,trivialVersions=true"
+# Options for controller-gen (v1 CRDs)
+CRD_OPTIONS ?= "crd"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -10,6 +10,9 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+
+# Version of controller-gen (keep in sync with .github/workflows/build-and-push.yaml)
+CONTROLLER_TOOLS_VERSION ?= v0.21.0
 
 all: manager
 
@@ -70,18 +73,9 @@ docker-push:
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
+	@if [ "$$($(CONTROLLER_GEN) --version 2>/dev/null | cut -d' ' -f2)" != "$(CONTROLLER_TOOLS_VERSION)" ]; then \
+		GOBIN=$(GOBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION); \
+	fi
 CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
 
 .PHONY: all test manager run install uninstall deploy manifests fmt vet generate docker-build docker-buildx docker-push controller-gen

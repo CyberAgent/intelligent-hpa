@@ -12572,7 +12572,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: cyberagentoss/intelligent-hpa-controller:latest
+        image: ghcr.io/CyberAgent/intelligent-hpa/intelligent-hpa-controller:latest
         name: manager
         resources:
           limits:

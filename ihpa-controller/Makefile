@@ -41,6 +41,14 @@ deploy:
 	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply --server-side --force-conflicts --field-manager=ihpa-controller -f -
 
+# Undeploy controller from the configured Kubernetes cluster in ~/.kube/config
+# Call with ignore-not-found=true to ignore resource not found errors during deletion.
+ifndef ignore-not-found
+  ignore-not-found = false
+endif
+undeploy:
+	kustomize build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -78,4 +86,4 @@ controller-gen:
 	fi
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 
-.PHONY: all test manager run install uninstall deploy manifests fmt vet generate docker-build docker-buildx docker-push controller-gen
+.PHONY: all test manager run install uninstall deploy undeploy manifests fmt vet generate docker-build docker-buildx docker-push controller-gen

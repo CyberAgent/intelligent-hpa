@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 
@@ -18,6 +19,20 @@ const (
 	TimeseriesQueryPath   = "/api/v1/query"
 	TimeseriesMetricsPath = "/api/v1/metrics"
 )
+
+// datadogBaseURL selects the API host without allowing credentials to be sent to arbitrary hosts.
+func datadogBaseURL() (string, error) {
+	site := os.Getenv("DD_SITE")
+	if site == "" {
+		return BaseURL, nil
+	}
+	switch site {
+	case "datadoghq.com", "us3.datadoghq.com", "us5.datadoghq.com", "datadoghq.eu", "ap1.datadoghq.com", "ap2.datadoghq.com":
+		return "https://api." + site, nil
+	default:
+		return "", fmt.Errorf("unsupported DD_SITE")
+	}
+}
 
 var (
 	resourceMetricMap = map[string]metricIdentifier{
@@ -76,7 +91,11 @@ func (d *Datadog) Send(metricName string, timestamp int64, point float64, tags [
 	if v, ok := opts["metricUnitReference"]; ok {
 		metricUnitReference = v.(string)
 	}
-	return d.send(BaseURL, metricName, timestamp, point, tags, metricUnitReference)
+	baseURL, err := datadogBaseURL()
+	if err != nil {
+		return err
+	}
+	return d.send(baseURL, metricName, timestamp, point, tags, metricUnitReference)
 }
 
 func (d *Datadog) send(baseurl string, metricName string, timestamp int64, point float64, tags []string, metricUnitReference string) error {
@@ -202,7 +221,11 @@ func (d *Datadog) setUnit(baseurl, metricName string, metricType string, metricU
 }
 
 func (d *Datadog) Fetch(metricName string, timestamp int64, tags []string, opts map[string]interface{}) (float64, error) {
-	dp, err := d.fetch(BaseURL, metricName, timestamp, tags)
+	baseURL, err := datadogBaseURL()
+	if err != nil {
+		return 0, err
+	}
+	dp, err := d.fetch(baseURL, metricName, timestamp, tags)
 	if err != nil {
 		return 0.0, err
 	}

@@ -3,12 +3,22 @@
 from datetime import datetime, timedelta
 import http.client
 import json
+import os
 from typing import List, Dict
 from urllib import request, parse
 
 from fittingjob import metrics_provider as mp
 
 QUERY_ENDPOINT = 'https://api.datadoghq.com/api/v1/query'
+
+
+
+def query_endpoint() -> str:
+    site = os.environ.get('DD_SITE') or 'datadoghq.com'
+    if site not in {'datadoghq.com', 'us3.datadoghq.com', 'us5.datadoghq.com',
+                    'datadoghq.eu', 'ap1.datadoghq.com', 'ap2.datadoghq.com'}:
+        raise ValueError('unsupported DD_SITE')
+    return 'https://api.' + site + '/api/v1/query'
 
 
 class Datadog(mp.MetricsProvider):
@@ -60,7 +70,7 @@ class Datadog(mp.MetricsProvider):
                 'to': str(int(r['end'].timestamp()))
             }
 
-            with self.__get(QUERY_ENDPOINT, query) as resp:
+            with self.__get(query_endpoint(), query) as resp:
                 j = json.loads(resp.read())
 
             if len(j['series']) == 0:

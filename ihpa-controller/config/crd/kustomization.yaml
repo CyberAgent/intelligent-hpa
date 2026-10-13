@@ -23,5 +23,7 @@ patchesStrategicMerge:
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.
+patchesJson6902: [{target: {group: apiextensions.k8s.io, version: v1, kind: CustomResourceDefinition, name: fittingjobs.ihpa.ake.cyberagent.co.jp}, path: patches/fittingjob_container_port_protocol_defaults.yaml}]
+
 configurations:
 - kustomizeconfig.yaml

@@ -1748,6 +1748,7 @@ spec:
                                               Protocol for port. Must be UDP, TCP, or SCTP.
                                               Defaults to "TCP".
                                             type: string
+                                            default: TCP
                                         required:
                                         - containerPort
                                         type: object
@@ -4148,6 +4149,7 @@ spec:
                                               Protocol for port. Must be UDP, TCP, or SCTP.
                                               Defaults to "TCP".
                                             type: string
+                                            default: TCP
                                         required:
                                         - containerPort
                                         type: object

@@ -69,8 +69,7 @@ type IntelligentHorizontalPodAutoscalerReconciler struct {
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
-func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("intelligenthorizontalpodautoscaler", req.NamespacedName)
 	ihpaNamespacedName := req.NamespacedName.String()
 

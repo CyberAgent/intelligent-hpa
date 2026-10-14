@@ -45,8 +45,7 @@ type EstimatorReconciler struct {
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=estimators,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=estimators/status,verbs=get;update;patch
 
-func (r *EstimatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *EstimatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("estimator", req.NamespacedName)
 
 	var est ihpav1beta2.Estimator

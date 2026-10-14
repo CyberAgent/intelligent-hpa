@@ -481,9 +481,9 @@ func (g *ihpaGeneratorImpl) StatusConfigMapResource() (*corev1.ConfigMap, error)
 	}
 
 	data := map[string]string{
-		"hpaName":        g.hpaName(),
+		"hpaName":         g.hpaName(),
 		"fittingJobNames": strings.Join(fittingJobNames, ","),
-		"estimatorNames": strings.Join(estimatorNames, ","),
+		"estimatorNames":  strings.Join(estimatorNames, ","),
 	}
 
 	cm := corev1.ConfigMap{

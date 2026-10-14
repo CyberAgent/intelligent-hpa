@@ -171,19 +171,19 @@ func estimatorHandler(opeCh <-chan *EstimateOperation, log logr.Logger) {
 				go et.estimator()
 				estimateTargets = append(estimateTargets, et)
 
-		case EstimateUpdate:
-			patch := ope.Patch
-			log.V(LogicMessageLogLevel).Info("update estimator", "id", patch.ID)
-			for i, et := range estimateTargets {
-				if et.ID == patch.ID {
-					if err := et.updateEstimateTarget(patch); err != nil {
-						log.V(LogicMessageLogLevel).Info("update estimator error", "error_msg", err)
+			case EstimateUpdate:
+				patch := ope.Patch
+				log.V(LogicMessageLogLevel).Info("update estimator", "id", patch.ID)
+				for i, et := range estimateTargets {
+					if et.ID == patch.ID {
+						if err := et.updateEstimateTarget(patch); err != nil {
+							log.V(LogicMessageLogLevel).Info("update estimator error", "error_msg", err)
+						}
+						estimateTargets[i] = et
+						// break search loop, not handler loop
+						break
 					}
-					estimateTargets[i] = et
-					// break search loop, not handler loop
-					break
 				}
-			}
 
 			case EstimateRemove:
 				for i, et := range estimateTargets {
@@ -201,7 +201,9 @@ func estimatorHandler(opeCh <-chan *EstimateOperation, log logr.Logger) {
 }
 
 // flow
-//    receive data (time series metrics)
+//
+//	receive data (time series metrics)
+//
 // -> shift data time stamp by gap
 // -> cut down data until now
 // -> see first elements of current data

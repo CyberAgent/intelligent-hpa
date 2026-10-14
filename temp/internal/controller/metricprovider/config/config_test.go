@@ -92,9 +92,9 @@ func TestConvertMetricProvider(t *testing.T) {
 
 func TestActiveProvider(t *testing.T) {
 	tests := []struct {
-		name     string
-		mp       *MetricProviderConfig
-		isNil    bool
+		name  string
+		mp    *MetricProviderConfig
+		isNil bool
 	}{
 		{
 			name: "datadog provider",

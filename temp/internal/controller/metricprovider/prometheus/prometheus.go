@@ -44,7 +44,7 @@ type Prometheus struct {
 }
 
 type queryResponse struct {
-	Status string `json:"status"`
+	Status string    `json:"status"`
 	Data   queryData `json:"data"`
 }
 

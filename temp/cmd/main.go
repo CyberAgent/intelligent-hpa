@@ -33,6 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	ihpav1beta1 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta1"
+	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
+	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -44,6 +48,8 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
+	utilruntime.Must(ihpav1beta1.AddToScheme(scheme))
+	utilruntime.Must(ihpav1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -119,6 +125,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controller.IntelligentHorizontalPodAutoscalerReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IntelligentHorizontalPodAutoscaler")
+		os.Exit(1)
+	}
+	if err = (&controller.FittingJobReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "FittingJob")
+		os.Exit(1)
+	}
+	if err = (&controller.EstimatorReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Estimator")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

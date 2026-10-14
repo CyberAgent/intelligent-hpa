@@ -1,0 +1,27 @@
+# permissions for end users to edit fittingjobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: temp
+    app.kubernetes.io/managed-by: kustomize
+  name: fittingjob-editor-role
+rules:
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - fittingjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ihpa.ake.cyberagent.co.jp
+  resources:
+  - fittingjobs/status
+  verbs:
+  - get

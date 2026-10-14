@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	batchv1beta1 "k8s.io/api/batch/v1beta1"

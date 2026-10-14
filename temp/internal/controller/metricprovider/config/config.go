@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider"
-	datadogmp "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider/datadog"
-	prometheusmp "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider/prometheus"
+	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider"
+	datadogmp "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/datadog"
+	prometheusmp "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/prometheus"
 )
 
 // MetricProviderConfig holds the configuration for a metric provider.

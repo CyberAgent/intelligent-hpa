@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"

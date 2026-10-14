@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider"
+	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider"
 	"github.com/go-logr/logr"
 )
 

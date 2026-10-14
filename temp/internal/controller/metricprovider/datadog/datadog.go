@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider"
+	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider"
 )
 
 const (

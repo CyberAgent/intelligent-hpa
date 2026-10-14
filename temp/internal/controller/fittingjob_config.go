@@ -1,8 +1,8 @@
-package controllers
+package controller
 
 import (
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider/config"
+	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/config"
 )
 
 // FittingJobConfig is representation of config for fittingJob.

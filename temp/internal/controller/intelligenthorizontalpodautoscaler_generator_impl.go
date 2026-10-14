@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider/config"
+	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/config"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"

@@ -1,10 +1,10 @@
-package controllers
+package controller
 
 import (
 	"encoding/json"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider/config"
+	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/config"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

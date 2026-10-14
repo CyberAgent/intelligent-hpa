@@ -1,11 +1,11 @@
-package controllers
+package controller
 
 import (
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers/metricprovider/datadog"
+	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/datadog"
 )
 
 func TestAdjustYHat(t *testing.T) {

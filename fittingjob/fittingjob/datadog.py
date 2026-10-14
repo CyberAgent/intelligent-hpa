@@ -9,9 +9,6 @@ from urllib import request, parse
 
 from fittingjob import metrics_provider as mp
 
-QUERY_ENDPOINT = 'https://api.datadoghq.com/api/v1/query'
-
-
 
 def query_endpoint() -> str:
     site = os.environ.get('DD_SITE') or 'datadoghq.com'

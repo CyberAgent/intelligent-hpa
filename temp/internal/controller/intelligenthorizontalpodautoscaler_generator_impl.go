@@ -66,7 +66,7 @@ func NewIntelligentHorizontalPodAutoscalerGenerator(
 
 	// Resolve Datadog API/APP keys from Secrets/ConfigMaps if KeysFrom is specified
 	if ihpa.Spec.MetricProvider.ProviderSource.Datadog != nil && len(ihpa.Spec.MetricProvider.ProviderSource.Datadog.KeysFrom) > 0 {
-		if err := resolveDatadogKeysFromEnv(ctx, r, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.ProviderSource.Datadog); err != nil {
+		if err := resolveDatadogKeysFromEnv(ctx, r.Client, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.ProviderSource.Datadog); err != nil {
 			return nil, fmt.Errorf("failed to resolve datadog keys from env: %w", err)
 		}
 	}

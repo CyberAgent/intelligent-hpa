@@ -17,8 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -28,55 +30,92 @@ import (
 type FittingJobSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 
-	// foo is an example field of FittingJob. Edit fittingjob_types.go to remove/update
-	// +optional
-	Foo *string `json:"foo,omitempty"`
+	// Seasonality is time span of bunch metrics period.
+	// This is defined as "daily", "weekly", "yearly", "auto".
+	// +kubebuilder:validation:Enum=daily;weekly;yearly;auto
+	// +kubebuilder:default=auto
+	Seasonality string `json:"seasonality,omitempty"`
+
+	// ExecuteOn is hour of executing daily fitting job.
+	// Fitting job is executed on at around the hour.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=23
+	// +kubebuilder:default=4
+	ExecuteOn int32 `json:"executeOn,omitempty"`
+
+	// ChangePointDetectionConfig is configuration for fittingjob change point detection.
+	ChangePointDetectionConfig ChangePointDetectionConfig `json:"changePointDetectionConfig,omitempty"`
+
+	// DataConfigMap is destination of result fittingjob forecasted.
+	DataConfigMap corev1.LocalObjectReference `json:"dataConfigMap"`
+
+	// Specifies the job(v1beta1) that will be based on fittingJob.
+	JobTemplate batchv1beta1.JobTemplateSpec `json:"template"`
+
+	// TargetMetric is a metric identifier for forecast target.
+	TargetMetric autoscalingv2beta2.MetricIdentifier `json:"metric"`
+
+	// Provider is a metricProvider for fetching target metric.
+	Provider MetricProvider `json:"provider"`
 }
 
-// FittingJobStatus defines the observed state of FittingJob.
+// ChangePointDetectionConfig is configuration for fittingjob change point detection.
+type ChangePointDetectionConfig struct {
+	// PercentageThreshold is threshold of anormaly detection for
+	// selection of training data in percentage.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=99
+	// +kubebuilder:default=50
+	PercentageThreshold int32 `json:"percentageThreshold,omitempty"`
+
+	// WindowSize is width of sliding window for partial time series.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=100
+	WindowSize int32 `json:"windowSize,omitempty"`
+
+	// TrajectoryRows is rows of trajectory matrix.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=50
+	TrajectoryRows int32 `json:"trajectoryRows,omitempty"`
+
+	// TrajectoryFeatures is number of trajectory features of left singular vectors.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=5
+	TrajectoryFeatures int32 `json:"trajectoryFeatures,omitempty"`
+
+	// TestRows is rows of test matrix
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=50
+	TestRows int32 `json:"testRows,omitempty"`
+
+	// TestFeatures is number of test features of left singular vectors.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=5
+	TestFeatures int32 `json:"testFeatures,omitempty"`
+
+	// Lag is gap of trajectory and test.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=288
+	Lag int32 `json:"lag,omitempty"`
+}
+
+// FittingJobStatus defines the observed state of FittingJob
 type FittingJobStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// For Kubernetes API conventions, see:
-	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-
-	// conditions represent the current state of the FittingJob resource.
-	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
-	//
-	// Standard condition types include:
-	// - "Available": the resource is fully functional
-	// - "Progressing": the resource is being created or updated
-	// - "Degraded": the resource failed to reach or maintain its desired state
-	//
-	// The status of each condition is one of True, False, or Unknown.
-	// +listType=map
-	// +listMapKey=type
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 
 // FittingJob is the Schema for the fittingjobs API
+// +kubebuilder:resource:shortName=fj
 type FittingJob struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// metadata is a standard object metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitzero"`
-
-	// spec defines the desired state of FittingJob
-	// +required
-	Spec FittingJobSpec `json:"spec"`
-
-	// status defines the observed state of FittingJob
-	// +optional
-	Status FittingJobStatus `json:"status,omitzero"`
+	Spec   FittingJobSpec   `json:"spec,omitempty"`
+	Status FittingJobStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -84,13 +123,10 @@ type FittingJob struct {
 // FittingJobList contains a list of FittingJob
 type FittingJobList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []FittingJob `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(func(s *runtime.Scheme) error {
-		s.AddKnownTypes(SchemeGroupVersion, &FittingJob{}, &FittingJobList{})
-		return nil
-	})
+	SchemeBuilder.Register(&FittingJob{}, &FittingJobList{})
 }

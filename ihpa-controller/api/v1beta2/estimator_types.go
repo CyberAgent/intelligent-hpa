@@ -17,8 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -26,57 +26,51 @@ import (
 
 // EstimatorSpec defines the desired state of Estimator
 type EstimatorSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+	// Mode is a way to adjust estimate metrics
+	// when the metrics out of line.
+	// +kubebuilder:validation:Enum=raw;adjust
+	// +kubebuilder:default=adjust
+	Mode string `json:"mode,omitempty"`
 
-	// foo is an example field of Estimator. Edit estimator_types.go to remove/update
-	// +optional
-	Foo *string `json:"foo,omitempty"`
+	// GapMinutes is gap time for generating forecast metrics.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=10
+	GapMinutes int32 `json:"gapMinutes,omitempty"`
+
+	// MetricName is a metric name to send
+	MetricName string `json:"metricName"`
+
+	// MetricTags is some tags to apply metric.
+	MetricTags []string `json:"metricTags"`
+
+	// BaseMetricName is a metric name to get base metric for adjustment.
+	BaseMetricName string `json:"baseMetricName,omitempty"`
+
+	// BaseMetricTags is some tags to get base metric for adjustment.
+	BaseMetricTags []string `json:"baseMetricTags,omitempty"`
+
+	// MetricProvider is data source and destination of metrics datapoints.
+	Provider MetricProvider `json:"provider"`
+
+	// DataConfigMap is destination of result fittingjob forecasted.
+	DataConfigMap corev1.LocalObjectReference `json:"dataConfigMap"`
 }
 
-// EstimatorStatus defines the observed state of Estimator.
+// EstimatorStatus defines the observed state of Estimator
 type EstimatorStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// For Kubernetes API conventions, see:
-	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-
-	// conditions represent the current state of the Estimator resource.
-	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
-	//
-	// Standard condition types include:
-	// - "Available": the resource is fully functional
-	// - "Progressing": the resource is being created or updated
-	// - "Degraded": the resource failed to reach or maintain its desired state
-	//
-	// The status of each condition is one of True, False, or Unknown.
-	// +listType=map
-	// +listMapKey=type
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 
 // Estimator is the Schema for the estimators API
 type Estimator struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// metadata is a standard object metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitzero"`
-
-	// spec defines the desired state of Estimator
-	// +required
-	Spec EstimatorSpec `json:"spec"`
-
-	// status defines the observed state of Estimator
-	// +optional
-	Status EstimatorStatus `json:"status,omitzero"`
+	Spec   EstimatorSpec   `json:"spec,omitempty"`
+	Status EstimatorStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -84,13 +78,10 @@ type Estimator struct {
 // EstimatorList contains a list of Estimator
 type EstimatorList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitzero"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Estimator `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(func(s *runtime.Scheme) error {
-		s.AddKnownTypes(SchemeGroupVersion, &Estimator{}, &EstimatorList{})
-		return nil
-	})
+	SchemeBuilder.Register(&Estimator{}, &EstimatorList{})
 }

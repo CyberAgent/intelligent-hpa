@@ -138,7 +138,7 @@ jobs:
 
       - name: Install controller-gen
         run: |
-          go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.21.0
+          go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.22.0
 
       - name: Generate manifests
         run: |

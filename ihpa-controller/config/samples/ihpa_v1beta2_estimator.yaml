@@ -1,0 +1,9 @@
+apiVersion: ihpa.ake.cyberagent.co.jp/v1beta2
+kind: Estimator
+metadata:
+  labels:
+    app.kubernetes.io/name: ihpa-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: estimator-sample
+spec:
+  # TODO(user): Add fields here

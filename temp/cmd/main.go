@@ -26,10 +26,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	ihpav1beta1 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta1"
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/controllers"
+	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -56,19 +58,25 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	webhookServer := webhook.NewServer(webhook.Options{
+		Port: 9443,
+	})
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		LeaderElection:     enableLeaderElection,
-		Port:               9443,
-		LeaderElectionID:   "9665e77b.ake.cyberagent.co.jp",
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+		},
+		LeaderElection:   enableLeaderElection,
+		WebhookServer:    webhookServer,
+		LeaderElectionID: "9665e77b.ake.cyberagent.co.jp",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	if err = (&controllers.IntelligentHorizontalPodAutoscalerReconciler{
+	if err = (&controller.IntelligentHorizontalPodAutoscalerReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("IntelligentHorizontalPodAutoscaler"),
 		Scheme: mgr.GetScheme(),
@@ -76,7 +84,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "IntelligentHorizontalPodAutoscaler")
 		os.Exit(1)
 	}
-	if err = (&controllers.FittingJobReconciler{
+	if err = (&controller.FittingJobReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("FittingJob"),
 		Scheme: mgr.GetScheme(),
@@ -84,7 +92,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "FittingJob")
 		os.Exit(1)
 	}
-	if err = (&controllers.EstimatorReconciler{
+	if err = (&controller.EstimatorReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Estimator"),
 		Scheme: mgr.GetScheme(),

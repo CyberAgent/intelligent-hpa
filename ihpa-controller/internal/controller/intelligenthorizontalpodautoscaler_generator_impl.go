@@ -255,7 +255,7 @@ func (g *ihpaGeneratorImpl) FittingJobResources() ([]*ihpav1beta2.FittingJob, er
 
 	var err error
 	if len(errStrs) != 0 {
-		err = fmt.Errorf(strings.Join(errStrs, ", "))
+		err = fmt.Errorf("%s", strings.Join(errStrs, ", "))
 	}
 
 	return fjs, err
@@ -337,7 +337,7 @@ func (g *ihpaGeneratorImpl) EstimatorResources() ([]*ihpav1beta2.Estimator, erro
 
 	var err error
 	if len(errStrs) != 0 {
-		err = fmt.Errorf(strings.Join(errStrs, ", "))
+		err = fmt.Errorf("%s", strings.Join(errStrs, ", "))
 	}
 
 	return ests, err

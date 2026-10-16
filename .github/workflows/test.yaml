@@ -8,6 +8,9 @@ permissions: {}
 
 jobs:
   test:
+    defaults:
+      run:
+        working-directory: ihpa-controller
     permissions:
       contents: read
     name: Run on Ubuntu
@@ -21,7 +24,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version-file: go.mod
+          go-version-file: ihpa-controller/go.mod
+          cache-dependency-path: ihpa-controller/go.sum
 
       - name: Running Tests
         run: |

@@ -1,0 +1,37 @@
+---
+apiVersion: ihpa.ake.cyberagent.co.jp/v1beta1
+kind: FittingJob
+metadata:
+  name: fittingjob
+spec:
+  seasonality: daily
+  executeOn: 12
+  changePointDetectionConfig:
+    percentageThreshold: 50
+    windowSize: 100
+    trajectoryRows: 50
+    trajectoryFeatures: 5
+    testRows: 50
+    testFeatures: 5
+    lag: 288
+  template:
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+          - name: pull-secrets
+          containers:
+            image: your-job-image:v1
+  metric:
+    name: nginx.net.request_per_s
+    selector:
+      matchLabels:
+        kube_namespace: default
+        kube_deployment: nginx
+        kube_container_name: nginx
+        kube_system_uid: xxx
+  provider:
+    name: datadog
+    datadog:
+      apikey: xxx
+      appkey: yyy

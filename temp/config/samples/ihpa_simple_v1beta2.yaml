@@ -1,0 +1,39 @@
+---
+apiVersion: ihpa.ake.cyberagent.co.jp/v1beta2
+kind: IntelligentHorizontalPodAutoscaler
+metadata:
+  name: nginx
+spec:
+  metricProvider:
+    name: datadog
+    datadog:
+      apikey: xxx
+      appkey: yyy
+  template:
+    spec:
+      scaleTargetRef:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: nginx
+      minReplicas: 1
+      maxReplicas: 5
+      metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 50
+      - type: External
+        external:
+          metric:
+            name: nginx.net.request_per_s
+            selector:
+              matchLabels:
+                kube_namespace: loadtest
+                kube_deployment: nginx
+                kube_container_name: nginx
+                kube_system_uid: xxx
+          target:
+            type: AverageValue
+            averageValue: "10"

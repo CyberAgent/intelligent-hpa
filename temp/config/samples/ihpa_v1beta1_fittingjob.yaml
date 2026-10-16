@@ -1,9 +1,0 @@
-apiVersion: ihpa.ake.cyberagent.co.jp/v1beta1
-kind: FittingJob
-metadata:
-  labels:
-    app.kubernetes.io/name: temp
-    app.kubernetes.io/managed-by: kustomize
-  name: fittingjob-sample
-spec:
-  # TODO(user): Add fields here

@@ -18,11 +18,17 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
 )
@@ -30,34 +36,101 @@ import (
 // FittingJobReconciler reconciles a FittingJob object
 type FittingJobReconciler struct {
 	client.Client
+	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=fittingjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=fittingjobs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=fittingjobs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=batch,resources=cronjobs/status,verbs=get
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the FittingJob object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.25.0/pkg/reconcile
 func (r *FittingJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	log := r.Log.WithValues("fittingjob", req.NamespacedName)
 
-	// TODO(user): your logic here
+	var fj ihpav1beta2.FittingJob
+	if err := r.Get(ctx, req.NamespacedName, &fj); err != nil {
+		log.V(ResourceMessageLogLevel).Info("failed to fetch FittingJob", "error_message", err)
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	g, err := NewFittingJobGenerator(&fj)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to create fittingjob resource generator: %w", err)
+	}
+
+	// * create/update configmap resource for fittingjob config
+	cmResource, err := g.ConfigMapResource()
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to generate configmap resource: %w", err)
+	}
+	cm := &corev1.ConfigMap{}
+	if err := r.Get(ctx, types.NamespacedName{Namespace: cmResource.GetNamespace(), Name: cmResource.GetName()}, cm); apierrors.IsNotFound(err) {
+		log.V(ResourceMessageLogLevel).Info("initialize configmap", "name", cmResource.GetName())
+		cm = cmResource.DeepCopy()
+		if err := r.Create(ctx, cm); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to create configmap: %w", err)
+		}
+	} else {
+		cm.Data = cmResource.DeepCopy().Data
+		cm.BinaryData = cmResource.DeepCopy().BinaryData
+		if err := r.Update(ctx, cm); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to update configmap: %w", err)
+		}
+	}
+	log.V(ResourceMessageLogLevel).Info("successed to create/update configmap", "kind", cm.GetObjectKind().GroupVersionKind(), "name", cm.GetName())
+
+	// * create/update cronjob resource
+	cjResource, err := g.CronJobResource()
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to generate cronjob resource: %w", err)
+	}
+
+	// Convert v1beta1 CronJob to unstructured for batch/v1 compatibility
+	// (K8s 1.25+ removed batch/v1beta1, so we use batch/v1)
+	cjUnstructured := &unstructured.Unstructured{}
+	cjUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "batch",
+		Version: "v1",
+		Kind:    "CronJob",
+	})
+	cjUnstructured.SetNamespace(cjResource.GetNamespace())
+	cjUnstructured.SetName(cjResource.GetName())
+
+	if err := r.Get(ctx, types.NamespacedName{Namespace: cjResource.GetNamespace(), Name: cjResource.GetName()}, cjUnstructured); apierrors.IsNotFound(err) {
+		log.V(ResourceMessageLogLevel).Info("initialize cronjob", "name", cjResource.GetName())
+		objMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(cjResource)
+		if convErr != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to convert cronjob to unstructured: %w", convErr)
+		}
+		cjUnstructured = &unstructured.Unstructured{Object: objMap}
+		cjUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "batch",
+			Version: "v1",
+			Kind:    "CronJob",
+		})
+		if err := r.Create(ctx, cjUnstructured); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to create cronjob: %w", err)
+		}
+	} else if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cronjob: %w", err)
+	} else {
+		specMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(&cjResource.Spec)
+		if convErr != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to convert cronjob spec to unstructured: %w", convErr)
+		}
+		cjUnstructured.Object["spec"] = specMap
+		if err := r.Update(ctx, cjUnstructured); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to update cronjob: %w", err)
+		}
+	}
+	log.V(ResourceMessageLogLevel).Info("successed to create/update cronjob", "kind", cjUnstructured.GetObjectKind().GroupVersionKind(), "name", cjUnstructured.GetName())
 
 	return ctrl.Result{}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
 func (r *FittingJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ihpav1beta2.FittingJob{}).
-		Named("fittingjob").
 		Complete(r)
 }

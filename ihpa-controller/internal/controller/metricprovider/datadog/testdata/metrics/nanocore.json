@@ -1,0 +1,9 @@
+{
+  "description": "The number of cores used",
+  "short_name": "k8s.cpu",
+  "integration": "kubelet",
+  "statsd_interval": null,
+  "per_unit": null,
+  "type": "gauge",
+  "unit": "nanocore"
+}

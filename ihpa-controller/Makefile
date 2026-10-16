@@ -12,7 +12,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 # Version of controller-gen (keep in sync with .github/workflows/build-and-push.yaml)
-CONTROLLER_TOOLS_VERSION ?= v0.21.0
+CONTROLLER_TOOLS_VERSION ?= v0.22.0
 
 all: manager
 

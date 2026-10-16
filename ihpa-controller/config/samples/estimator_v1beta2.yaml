@@ -1,0 +1,7 @@
+apiVersion: ihpa.ake.cyberagent.co.jp/v1beta2
+kind: Estimator
+metadata:
+  name: estimator-sample
+spec:
+  # Add fields here
+  foo: bar

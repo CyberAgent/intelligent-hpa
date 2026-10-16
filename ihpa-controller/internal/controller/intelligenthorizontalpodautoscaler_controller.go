@@ -97,7 +97,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		return ctrl.Result{}, fmt.Errorf("failed to generate hpa resource: %w", err)
 	}
 
-	// Convert v2beta2 HPA to unstructured for autoscaling/v2 compatibility
+	// Convert HPA to unstructured for autoscaling/v2 compatibility
 	// (K8s 1.25+ removed autoscaling/v2beta2, so we use autoscaling/v2)
 	hpaUnstructured := &unstructured.Unstructured{}
 	hpaUnstructured.SetGroupVersionKind(schema.GroupVersionKind{

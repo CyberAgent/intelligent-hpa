@@ -185,7 +185,7 @@ spec:
           - name: pull-secret
 ```
 
-You can see metrics status by `kubectl describe hpa.v2beta2.autoscaling xxx`. A predictive metric has `ake.ihpa` prefix. The metric sometimes shows weird value but it is not problem. This is caused by workaround for issue that the HPA interprets the provider's values without scale unit information.
+You can see metrics status by `kubectl describe hpa.v2.autoscaling xxx`. A predictive metric has `ake.ihpa` prefix. The metric sometimes shows weird value but it is not problem. This is caused by workaround for issue that the HPA interprets the provider's values without scale unit information.
 
 ```yaml
 Name:                                                                       ihpa-nginx

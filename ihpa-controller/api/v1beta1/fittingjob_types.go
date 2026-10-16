@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +54,7 @@ type FittingJobSpec struct {
 	JobTemplate batchv1beta1.JobTemplateSpec `json:"template"`
 
 	// TargetMetric is a metric identifier for forecast target.
-	TargetMetric autoscalingv2beta2.MetricIdentifier `json:"metric"`
+	TargetMetric autoscalingv2.MetricIdentifier `json:"metric"`
 
 	// Provider is a metricProvider for fetching target metric.
 	Provider MetricProvider `json:"provider"`

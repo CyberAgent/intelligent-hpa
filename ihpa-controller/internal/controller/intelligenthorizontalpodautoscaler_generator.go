@@ -2,15 +2,15 @@ package controller
 
 import (
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 type IntelligentHorizontalPodAutoscalerGenerator interface {
-	// HorizontalPodAutoscalerResource generate a HPA (v2beta2.autoscaling) struct
+	// HorizontalPodAutoscalerResource generate a HPA (autoscaling/v2) struct
 	// that added some forecast metric fields.
-	HorizontalPodAutoscalerResource() (*autoscalingv2beta2.HorizontalPodAutoscaler, error)
+	HorizontalPodAutoscalerResource() (*autoscalingv2.HorizontalPodAutoscaler, error)
 	// FittingJobResources generate an array of FittingJob struct
 	// that generated every metric fields.
 	FittingJobResources() ([]*ihpav1beta2.FittingJob, error)

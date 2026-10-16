@@ -12,7 +12,7 @@ import (
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
 	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/config"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -113,19 +113,19 @@ func resolveDatadogKeysFromEnv(ctx context.Context, r client.Client, namespace s
 }
 
 // HorizontalPodAutoscalerResource returns an HPA resource which forecasted metrics is added to.
-func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2beta2.HorizontalPodAutoscaler, error) {
-	hpa := autoscalingv2beta2.HorizontalPodAutoscaler{}
+func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2.HorizontalPodAutoscaler, error) {
+	hpa := autoscalingv2.HorizontalPodAutoscaler{}
 	hpa.ObjectMeta = metav1.ObjectMeta{
 		Name:      g.hpaName(),
 		Namespace: g.ihpa.GetNamespace(),
 	}
 
 	extendedMetrics := g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.Metrics
-	metrics := make([]autoscalingv2beta2.MetricSpec, len(extendedMetrics))
+	metrics := make([]autoscalingv2.MetricSpec, len(extendedMetrics))
 	for i := range extendedMetrics {
 		metrics[i] = *(extendedMetrics[i].MetricSpec())
 	}
-	forecastedMetrics := make([]autoscalingv2beta2.MetricSpec, len(metrics))
+	forecastedMetrics := make([]autoscalingv2.MetricSpec, len(metrics))
 	for i := range metrics {
 		f, err := g.generateForecastedMetricSpec(&metrics[i])
 		if err != nil {
@@ -135,7 +135,7 @@ func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2bet
 	}
 	metrics = append(metrics, forecastedMetrics...)
 
-	hpa.Spec = autoscalingv2beta2.HorizontalPodAutoscalerSpec{
+	hpa.Spec = autoscalingv2.HorizontalPodAutoscalerSpec{
 		ScaleTargetRef: *g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.ScaleTargetRef.DeepCopy(),
 		MinReplicas:    g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.MinReplicas,
 		MaxReplicas:    g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.MaxReplicas,
@@ -148,7 +148,7 @@ func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2bet
 }
 
 // generateForecastedMetricSpec returns external MetricSpec for forecasted value.
-func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2beta2.MetricSpec) (*autoscalingv2beta2.MetricSpec, error) {
+func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricSpec, error) {
 	metricName, metricTarget := extractScopedMetricInfo(metric)
 	if metricTarget == nil {
 		return nil, fmt.Errorf("cannot generate correspond metric. please check integrity of the metric instance. (%v)", *metric)
@@ -225,12 +225,12 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2be
 	metricTarget.Type = "AverageValue"
 	metricTarget.AverageValue = &avgValue
 
-	externalSource := &autoscalingv2beta2.ExternalMetricSource{
+	externalSource := &autoscalingv2.ExternalMetricSource{
 		Metric: *metricIdentifier,
 		Target: *metricTarget,
 	}
 
-	forecastedMetric := &autoscalingv2beta2.MetricSpec{
+	forecastedMetric := &autoscalingv2.MetricSpec{
 		Type:     "External",
 		External: externalSource,
 	}
@@ -295,8 +295,8 @@ func (g *ihpaGeneratorImpl) fittingJobResource(metric *ihpav1beta2.ExtendedMetri
 // convertMetricSpecToIdentifier convert metric name to special name which is dedicated to metric provider.
 // Resource, External, Object, and Pods metric types are supported.
 // For example, "cpu" in Resource is convert to "kubernetes.cpu.usage.total" in Datadog.
-func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2beta2.MetricSpec) (*autoscalingv2beta2.MetricIdentifier, error) {
-	metricIdentifier := &autoscalingv2beta2.MetricIdentifier{}
+func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricIdentifier, error) {
+	metricIdentifier := &autoscalingv2.MetricIdentifier{}
 	switch metric.Type {
 	case "Resource":
 		mp := mpconfig.ConvertMetricProvider(g.ihpa.Spec.MetricProvider.DeepCopy()).ActiveProvider()
@@ -501,7 +501,7 @@ func (g *ihpaGeneratorImpl) StatusConfigMapResource() (*corev1.ConfigMap, error)
 
 // uniqueMetricID return identifier for a metric. This ID is used for
 // identification each fittingjob.
-func (g *ihpaGeneratorImpl) uniqueMetricID(metric *autoscalingv2beta2.MetricSpec) string {
+func (g *ihpaGeneratorImpl) uniqueMetricID(metric *autoscalingv2.MetricSpec) string {
 	hash := g.uniqueMetricHash(metric)
 	dst := make([]byte, hex.EncodedLen(len(hash)))
 	hex.Encode(dst, hash)
@@ -509,7 +509,7 @@ func (g *ihpaGeneratorImpl) uniqueMetricID(metric *autoscalingv2beta2.MetricSpec
 }
 
 // uniqueMetricHash return identifier for a metric as md5 hash (fixed-length(16) byte).
-func (g *ihpaGeneratorImpl) uniqueMetricHash(metric *autoscalingv2beta2.MetricSpec) []byte {
+func (g *ihpaGeneratorImpl) uniqueMetricHash(metric *autoscalingv2.MetricSpec) []byte {
 	metricName, _ := extractScopedMetricInfo(metric)
 	targetKind := g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.ScaleTargetRef.Kind
 	targetName := g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.ScaleTargetRef.Name
@@ -551,7 +551,7 @@ func (g *ihpaGeneratorImpl) uniqueMetricFilters() map[string]string {
 
 // ihpaMetricString return namespaced metric name.
 // e.g.) ihpa-<ihpa_name>-<metric_name>
-func (g *ihpaGeneratorImpl) ihpaMetricString(metric *autoscalingv2beta2.MetricSpec) string {
+func (g *ihpaGeneratorImpl) ihpaMetricString(metric *autoscalingv2.MetricSpec) string {
 	// uniqueness of name is guaranteed by Kind, Name, MetricName
 	// because CronJob is namespaced resource.
 	metricName, _ := extractScopedMetricInfo(metric)

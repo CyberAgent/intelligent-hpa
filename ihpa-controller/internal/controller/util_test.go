@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	ihpav1beta1 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,114 +102,114 @@ func TestReplaceStrings(t *testing.T) {
 
 func TestExtractScopedMetricInfo(t *testing.T) {
 	tests := []struct {
-		metric    autoscalingv2beta2.MetricSpec
+		metric    autoscalingv2.MetricSpec
 		expected  string
-		expTarget *autoscalingv2beta2.MetricTarget
+		expTarget *autoscalingv2.MetricTarget
 	}{
 		{
-			metric: autoscalingv2beta2.MetricSpec{
+			metric: autoscalingv2.MetricSpec{
 				Type: "Resource",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "cpu",
-					Target: autoscalingv2beta2.MetricTarget{
-						Type:               autoscalingv2beta2.MetricTargetType("Utilization"),
+					Target: autoscalingv2.MetricTarget{
+						Type:               autoscalingv2.MetricTargetType("Utilization"),
 						AverageUtilization: func(i int32) *int32 { return &i }(50),
 					},
 				},
 			},
 			expected: "cpu",
-			expTarget: &autoscalingv2beta2.MetricTarget{
-				Type:               autoscalingv2beta2.MetricTargetType("Utilization"),
+			expTarget: &autoscalingv2.MetricTarget{
+				Type:               autoscalingv2.MetricTargetType("Utilization"),
 				AverageUtilization: func(i int32) *int32 { return &i }(50),
 			},
 		},
 		{
-			metric: autoscalingv2beta2.MetricSpec{
+			metric: autoscalingv2.MetricSpec{
 				Type: "Object",
-				Object: &autoscalingv2beta2.ObjectMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				Object: &autoscalingv2.ObjectMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "requests-per-second",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
-						Type:               autoscalingv2beta2.MetricTargetType("Utilization"),
+					Target: autoscalingv2.MetricTarget{
+						Type:               autoscalingv2.MetricTargetType("Utilization"),
 						AverageUtilization: func(i int32) *int32 { return &i }(60),
 					},
 				},
 			},
 			expected: "requests-per-second",
-			expTarget: &autoscalingv2beta2.MetricTarget{
-				Type:               autoscalingv2beta2.MetricTargetType("Utilization"),
+			expTarget: &autoscalingv2.MetricTarget{
+				Type:               autoscalingv2.MetricTargetType("Utilization"),
 				AverageUtilization: func(i int32) *int32 { return &i }(60),
 			},
 		},
 		{
-			metric: autoscalingv2beta2.MetricSpec{
+			metric: autoscalingv2.MetricSpec{
 				Type: "Pods",
-				Pods: &autoscalingv2beta2.PodsMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				Pods: &autoscalingv2.PodsMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "packets-per-second",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
-						Type:  autoscalingv2beta2.MetricTargetType("Value"),
+					Target: autoscalingv2.MetricTarget{
+						Type:  autoscalingv2.MetricTargetType("Value"),
 						Value: resource.NewQuantity(100, "test1"),
 					},
 				},
 			},
 			expected: "packets-per-second",
-			expTarget: &autoscalingv2beta2.MetricTarget{
-				Type:  autoscalingv2beta2.MetricTargetType("Value"),
+			expTarget: &autoscalingv2.MetricTarget{
+				Type:  autoscalingv2.MetricTargetType("Value"),
 				Value: resource.NewQuantity(100, "test1"),
 			},
 		},
 		{
-			metric: autoscalingv2beta2.MetricSpec{
+			metric: autoscalingv2.MetricSpec{
 				Type: "External",
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "test.sample-metric",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
-						Type:         autoscalingv2beta2.MetricTargetType("AverageValue"),
+					Target: autoscalingv2.MetricTarget{
+						Type:         autoscalingv2.MetricTargetType("AverageValue"),
 						AverageValue: resource.NewQuantity(20, "test2"),
 					},
 				},
 			},
 			expected: "test.sample-metric",
-			expTarget: &autoscalingv2beta2.MetricTarget{
-				Type:         autoscalingv2beta2.MetricTargetType("AverageValue"),
+			expTarget: &autoscalingv2.MetricTarget{
+				Type:         autoscalingv2.MetricTargetType("AverageValue"),
 				AverageValue: resource.NewQuantity(20, "test2"),
 			},
 		},
 		{
-			metric: autoscalingv2beta2.MetricSpec{
+			metric: autoscalingv2.MetricSpec{
 				Type: "Object",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "resource_metrics",
-					Target: autoscalingv2beta2.MetricTarget{
-						Type:               autoscalingv2beta2.MetricTargetType("Utilization"),
+					Target: autoscalingv2.MetricTarget{
+						Type:               autoscalingv2.MetricTargetType("Utilization"),
 						AverageUtilization: func(i int32) *int32 { return &i }(50),
 					},
 				},
-				Object: &autoscalingv2beta2.ObjectMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				Object: &autoscalingv2.ObjectMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "object_metrics",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
-						Type:               autoscalingv2beta2.MetricTargetType("Utilization"),
+					Target: autoscalingv2.MetricTarget{
+						Type:               autoscalingv2.MetricTargetType("Utilization"),
 						AverageUtilization: func(i int32) *int32 { return &i }(60),
 					},
 				},
 			},
 			expected: "object_metrics",
-			expTarget: &autoscalingv2beta2.MetricTarget{
-				Type:               autoscalingv2beta2.MetricTargetType("Utilization"),
+			expTarget: &autoscalingv2.MetricTarget{
+				Type:               autoscalingv2.MetricTargetType("Utilization"),
 				AverageUtilization: func(i int32) *int32 { return &i }(60),
 			},
 		},
 		{
-			metric: autoscalingv2beta2.MetricSpec{
+			metric: autoscalingv2.MetricSpec{
 				Type: "Unknown",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "resource_metrics",
 				},
 			},
@@ -442,7 +442,7 @@ func TestAddOwnerReference(t *testing.T) {
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "HorizontalPodAutoscaler",
-					APIVersion: "v2beta2",
+					APIVersion: "autoscaling/v2",
 				},
 			}),
 			expected: metav1.Object(&corev1.ConfigMap{
@@ -463,7 +463,7 @@ func TestAddOwnerReference(t *testing.T) {
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "HorizontalPodAutoscaler",
-					APIVersion: "v2beta2",
+					APIVersion: "autoscaling/v2",
 				},
 			}),
 		},

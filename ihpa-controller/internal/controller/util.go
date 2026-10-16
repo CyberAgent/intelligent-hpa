@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,9 +37,9 @@ func replaceStrings(s string, m map[string]string) string {
 }
 
 // extractScopedMetricInfo extracts name and target information of the metric.
-func extractScopedMetricInfo(metric *autoscalingv2beta2.MetricSpec) (string, *autoscalingv2beta2.MetricTarget) {
+func extractScopedMetricInfo(metric *autoscalingv2.MetricSpec) (string, *autoscalingv2.MetricTarget) {
 	var name string
-	var target *autoscalingv2beta2.MetricTarget
+	var target *autoscalingv2.MetricTarget
 	switch metric.Type {
 	case "Resource":
 		name = metric.Resource.Name.String()

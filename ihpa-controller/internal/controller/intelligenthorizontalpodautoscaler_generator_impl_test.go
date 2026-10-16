@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,7 +36,7 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 			Spec: ihpav1beta2.IntelligentHorizontalPodAutoscalerSpec{
 				HorizontalPodAutoscalerTemplate: ihpav1beta2.ExtendedHorizontalPodAutoscalerTemplateSpec{
 					Spec: ihpav1beta2.ExtendedHorizontalPodAutoscalerSpec{
-						ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
+						ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 							APIVersion: "apps/v1",
 							Kind:       "Deployment",
 							Name:       "nginx",
@@ -45,9 +45,9 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 						Metrics: []ihpav1beta2.ExtendedMetricSpec{
 							{
 								Type: "Resource",
-								Resource: &autoscalingv2beta2.ResourceMetricSource{
+								Resource: &autoscalingv2.ResourceMetricSource{
 									Name: "cpu",
-									Target: autoscalingv2beta2.MetricTarget{
+									Target: autoscalingv2.MetricTarget{
 										Type:               "Utilization",
 										AverageUtilization: func(i int32) *int32 { return &i }(50),
 									},
@@ -97,7 +97,7 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 			Spec: ihpav1beta2.IntelligentHorizontalPodAutoscalerSpec{
 				HorizontalPodAutoscalerTemplate: ihpav1beta2.ExtendedHorizontalPodAutoscalerTemplateSpec{
 					Spec: ihpav1beta2.ExtendedHorizontalPodAutoscalerSpec{
-						ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
+						ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 							APIVersion: "apps/v1",
 							Kind:       "StatefulSet",
 							Name:       "web-db",
@@ -107,9 +107,9 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 						Metrics: []ihpav1beta2.ExtendedMetricSpec{
 							{
 								Type: "Resource",
-								Resource: &autoscalingv2beta2.ResourceMetricSource{
+								Resource: &autoscalingv2.ResourceMetricSource{
 									Name: "cpu",
-									Target: autoscalingv2beta2.MetricTarget{
+									Target: autoscalingv2.MetricTarget{
 										Type:               "Utilization",
 										AverageUtilization: func(i int32) *int32 { return &i }(50),
 									},
@@ -138,9 +138,9 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 							},
 							{
 								Type: "Resource",
-								Resource: &autoscalingv2beta2.ResourceMetricSource{
+								Resource: &autoscalingv2.ResourceMetricSource{
 									Name: "memory",
-									Target: autoscalingv2beta2.MetricTarget{
+									Target: autoscalingv2.MetricTarget{
 										Type:               "Utilization",
 										AverageUtilization: func(i int32) *int32 { return &i }(80),
 									},
@@ -149,8 +149,8 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 							},
 							{
 								Type: "External",
-								External: &autoscalingv2beta2.ExternalMetricSource{
-									Metric: autoscalingv2beta2.MetricIdentifier{
+								External: &autoscalingv2.ExternalMetricSource{
+									Metric: autoscalingv2.MetricIdentifier{
 										Name: "nginx.net.request_per_s",
 										Selector: &metav1.LabelSelector{
 											MatchLabels: map[string]string{
@@ -160,7 +160,7 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 											},
 										},
 									},
-									Target: autoscalingv2beta2.MetricTarget{
+									Target: autoscalingv2.MetricTarget{
 										Type:         "AverageValue",
 										AverageValue: resource.NewQuantity(50, resource.DecimalSI),
 									},
@@ -261,11 +261,11 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		base     *ihpaGeneratorImpl
-		expected *autoscalingv2beta2.HorizontalPodAutoscaler
+		expected *autoscalingv2.HorizontalPodAutoscaler
 	}{
 		{
 			base: sample1,
-			expected: &autoscalingv2beta2.HorizontalPodAutoscaler{
+			expected: &autoscalingv2.HorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ihpa-sample1",
 					Namespace: "default",
@@ -280,19 +280,19 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 					},
 				},
-				Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
-					ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
+				Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+					ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 						APIVersion: "apps/v1",
 						Kind:       "Deployment",
 						Name:       "nginx",
 					},
 					MinReplicas: func(i int32) *int32 { return &i }(3),
-					Metrics: []autoscalingv2beta2.MetricSpec{
+					Metrics: []autoscalingv2.MetricSpec{
 						{
 							Type: "Resource",
-							Resource: &autoscalingv2beta2.ResourceMetricSource{
+							Resource: &autoscalingv2.ResourceMetricSource{
 								Name: "cpu",
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:               "Utilization",
 									AverageUtilization: func(i int32) *int32 { return &i }(50),
 								},
@@ -300,8 +300,8 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 						{
 							Type: "External",
-							External: &autoscalingv2beta2.ExternalMetricSource{
-								Metric: autoscalingv2beta2.MetricIdentifier{
+							External: &autoscalingv2.ExternalMetricSource{
+								Metric: autoscalingv2.MetricIdentifier{
 									Name: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
@@ -311,7 +311,7 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 										},
 									},
 								},
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(resource.NewQuantity(250, resource.DecimalSI).ScaledValue(resource.Micro), resource.DecimalSI), // 250M
 								},
@@ -323,7 +323,7 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 		},
 		{
 			base: sample2,
-			expected: &autoscalingv2beta2.HorizontalPodAutoscaler{
+			expected: &autoscalingv2.HorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ihpa-sample2",
 					Namespace: "web",
@@ -338,20 +338,20 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 					},
 				},
-				Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
-					ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
+				Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+					ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 						APIVersion: "apps/v1",
 						Kind:       "StatefulSet",
 						Name:       "web-db",
 					},
 					MinReplicas: func(i int32) *int32 { return &i }(5),
 					MaxReplicas: 10,
-					Metrics: []autoscalingv2beta2.MetricSpec{
+					Metrics: []autoscalingv2.MetricSpec{
 						{
 							Type: "Resource",
-							Resource: &autoscalingv2beta2.ResourceMetricSource{
+							Resource: &autoscalingv2.ResourceMetricSource{
 								Name: "cpu",
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:               "Utilization",
 									AverageUtilization: func(i int32) *int32 { return &i }(50),
 								},
@@ -359,9 +359,9 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 						{
 							Type: "Resource",
-							Resource: &autoscalingv2beta2.ResourceMetricSource{
+							Resource: &autoscalingv2.ResourceMetricSource{
 								Name: "memory",
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:               "Utilization",
 									AverageUtilization: func(i int32) *int32 { return &i }(80),
 								},
@@ -369,8 +369,8 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 						{
 							Type: "External",
-							External: &autoscalingv2beta2.ExternalMetricSource{
-								Metric: autoscalingv2beta2.MetricIdentifier{
+							External: &autoscalingv2.ExternalMetricSource{
+								Metric: autoscalingv2.MetricIdentifier{
 									Name: "nginx.net.request_per_s",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
@@ -380,7 +380,7 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 										},
 									},
 								},
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(50, resource.DecimalSI),
 								},
@@ -388,8 +388,8 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 						{
 							Type: "External",
-							External: &autoscalingv2beta2.ExternalMetricSource{
-								Metric: autoscalingv2beta2.MetricIdentifier{
+							External: &autoscalingv2.ExternalMetricSource{
+								Metric: autoscalingv2.MetricIdentifier{
 									Name: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
@@ -399,7 +399,7 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 										},
 									},
 								},
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(resource.NewQuantity(1000, resource.DecimalSI).ScaledValue(resource.Micro), resource.DecimalSI),
 									// 1000M (1,000,000,000) (resource.Micro = 10^6)
@@ -408,8 +408,8 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 						{
 							Type: "External",
-							External: &autoscalingv2beta2.ExternalMetricSource{
-								Metric: autoscalingv2beta2.MetricIdentifier{
+							External: &autoscalingv2.ExternalMetricSource{
+								Metric: autoscalingv2.MetricIdentifier{
 									Name: "ake.ihpa.forecasted_kubernetes_memory_usage",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
@@ -419,7 +419,7 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 										},
 									},
 								},
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(resource.NewQuantity(400_000_000, resource.DecimalSI).Value(), resource.DecimalSI),
 								},
@@ -427,8 +427,8 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 						},
 						{
 							Type: "External",
-							External: &autoscalingv2beta2.ExternalMetricSource{
-								Metric: autoscalingv2beta2.MetricIdentifier{
+							External: &autoscalingv2.ExternalMetricSource{
+								Metric: autoscalingv2.MetricIdentifier{
 									Name: "ake.ihpa.forecasted_nginx_net_request_per_s",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
@@ -438,7 +438,7 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 										},
 									},
 								},
-								Target: autoscalingv2beta2.MetricTarget{
+								Target: autoscalingv2.MetricTarget{
 									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(50, resource.DecimalSI),
 								},
@@ -457,7 +457,7 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(got, tt.expected) {
-			for i, target := range []*autoscalingv2beta2.HorizontalPodAutoscaler{got, tt.expected} {
+			for i, target := range []*autoscalingv2.HorizontalPodAutoscaler{got, tt.expected} {
 				for _, m := range target.Spec.Metrics {
 					if ext := m.External; ext != nil {
 						var prefix string
@@ -511,7 +511,7 @@ func TestFittingJobResources(t *testing.T) {
 						JobPatchSpec: ihpav1beta2.JobPatchSpec{
 							ServiceAccountName: "ihpa-sample1",
 						},
-						TargetMetric: autoscalingv2beta2.MetricIdentifier{
+						TargetMetric: autoscalingv2.MetricIdentifier{
 							Name: "kubernetes.cpu.usage.total",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
@@ -577,7 +577,7 @@ func TestFittingJobResources(t *testing.T) {
 							},
 							ServiceAccountName: "ihpa-sample2",
 						},
-						TargetMetric: autoscalingv2beta2.MetricIdentifier{
+						TargetMetric: autoscalingv2.MetricIdentifier{
 							Name: "kubernetes.cpu.usage.total",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
@@ -621,7 +621,7 @@ func TestFittingJobResources(t *testing.T) {
 						JobPatchSpec: ihpav1beta2.JobPatchSpec{
 							ServiceAccountName: "ihpa-sample2",
 						},
-						TargetMetric: autoscalingv2beta2.MetricIdentifier{
+						TargetMetric: autoscalingv2.MetricIdentifier{
 							Name: "kubernetes.memory.usage",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
@@ -728,7 +728,7 @@ func TestFittingJobResources(t *testing.T) {
 								},
 							},
 						},
-						TargetMetric: autoscalingv2beta2.MetricIdentifier{
+						TargetMetric: autoscalingv2.MetricIdentifier{
 							Name: "nginx.net.request_per_s",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
@@ -1240,25 +1240,25 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
-		metric    *autoscalingv2beta2.MetricSpec
-		expected  *autoscalingv2beta2.MetricSpec
+		metric    *autoscalingv2.MetricSpec
+		expected  *autoscalingv2.MetricSpec
 	}{
 		{
 			generator: sample1,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "Resource",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "cpu",
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
 			},
-			expected: &autoscalingv2beta2.MetricSpec{
+			expected: &autoscalingv2.MetricSpec{
 				Type: "External",
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
@@ -1268,7 +1268,7 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 							},
 						},
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(resource.NewQuantity(150, resource.DecimalSI).ScaledValue(resource.Micro), resource.DecimalSI),
 					},
@@ -1277,10 +1277,10 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 		},
 		{
 			generator: sample2,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "External",
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "nginx.net.request_per_s",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
@@ -1288,16 +1288,16 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 							},
 						},
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
 			},
-			expected: &autoscalingv2beta2.MetricSpec{
+			expected: &autoscalingv2.MetricSpec{
 				Type: "External",
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "ake.ihpa.forecasted_nginx_net_request_per_s",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
@@ -1307,7 +1307,7 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 							},
 						},
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
@@ -1331,22 +1331,22 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
-		metric    *autoscalingv2beta2.MetricSpec
-		expected  *autoscalingv2beta2.MetricIdentifier
+		metric    *autoscalingv2.MetricSpec
+		expected  *autoscalingv2.MetricIdentifier
 	}{
 		{
 			generator: sample1,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "Resource",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "cpu",
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
 			},
-			expected: &autoscalingv2beta2.MetricIdentifier{
+			expected: &autoscalingv2.MetricIdentifier{
 				Name: "kubernetes.cpu.usage.total",
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -1359,10 +1359,10 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 		},
 		{
 			generator: sample2,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "External",
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "nginx.net.request_per_s",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
@@ -1370,13 +1370,13 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 							},
 						},
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
 			},
-			expected: &autoscalingv2beta2.MetricIdentifier{
+			expected: &autoscalingv2.MetricIdentifier{
 				Name: "nginx.net.request_per_s",
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -1387,42 +1387,42 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 		},
 		{
 			generator: sample2,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "Object",
-				Object: &autoscalingv2beta2.ObjectMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				Object: &autoscalingv2.ObjectMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "requests-per-second",
 					},
-					DescribedObject: autoscalingv2beta2.CrossVersionObjectReference{
+					DescribedObject: autoscalingv2.CrossVersionObjectReference{
 						Kind:       "Ingress",
 						Name:       "main-route",
 						APIVersion: "networking.k8s.io/v1beta1",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:  "Value",
 						Value: resource.NewQuantity(2000, resource.DecimalSI),
 					},
 				},
 			},
-			expected: &autoscalingv2beta2.MetricIdentifier{
+			expected: &autoscalingv2.MetricIdentifier{
 				Name: "requests-per-second",
 			},
 		},
 		{
 			generator: sample2,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "Pods",
-				Pods: &autoscalingv2beta2.PodsMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				Pods: &autoscalingv2.PodsMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "packets-per-second",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
 			},
-			expected: &autoscalingv2beta2.MetricIdentifier{
+			expected: &autoscalingv2.MetricIdentifier{
 				Name: "packets-per-second",
 			},
 		},
@@ -1446,16 +1446,16 @@ func TestUniqueMetricID(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
-		metric    *autoscalingv2beta2.MetricSpec
+		metric    *autoscalingv2.MetricSpec
 		expected  string
 	}{
 		{
 			generator: sample1,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "Resource",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "cpu",
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
@@ -1465,13 +1465,13 @@ func TestUniqueMetricID(t *testing.T) {
 		},
 		{
 			generator: sample1,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "External",
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "hello_world.metric",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
@@ -1481,11 +1481,11 @@ func TestUniqueMetricID(t *testing.T) {
 		},
 		{
 			generator: sample2,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "Resource",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "memory",
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
@@ -1580,16 +1580,16 @@ func TestIhpaMetricString(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
-		metric    *autoscalingv2beta2.MetricSpec
+		metric    *autoscalingv2.MetricSpec
 		expected  string
 	}{
 		{
 			generator: sample1,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "Resource",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "cpu",
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
@@ -1599,20 +1599,20 @@ func TestIhpaMetricString(t *testing.T) {
 		},
 		{
 			generator: sample1,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "External",
-				Resource: &autoscalingv2beta2.ResourceMetricSource{
+				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "cpu",
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "hello_world.metric",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
@@ -1622,13 +1622,13 @@ func TestIhpaMetricString(t *testing.T) {
 		},
 		{
 			generator: sample2,
-			metric: &autoscalingv2beta2.MetricSpec{
+			metric: &autoscalingv2.MetricSpec{
 				Type: "External",
-				External: &autoscalingv2beta2.ExternalMetricSource{
-					Metric: autoscalingv2beta2.MetricIdentifier{
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
 						Name: "nginx.net.request_per_s",
 					},
-					Target: autoscalingv2beta2.MetricTarget{
+					Target: autoscalingv2.MetricTarget{
 						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},

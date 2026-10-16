@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -49,7 +49,7 @@ func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorIm
 					},
 					Image: "fittingjob-image:v1",
 				},
-				TargetMetric: autoscalingv2beta2.MetricIdentifier{
+				TargetMetric: autoscalingv2.MetricIdentifier{
 					Name: "metric.name",
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
@@ -152,7 +152,7 @@ func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorIm
 						},
 					},
 				},
-				TargetMetric: autoscalingv2beta2.MetricIdentifier{
+				TargetMetric: autoscalingv2.MetricIdentifier{
 					Name: "metric.name",
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{

@@ -14,6 +14,9 @@ endif
 # Version of controller-gen (keep in sync with .github/workflows/build-and-push.yaml)
 CONTROLLER_TOOLS_VERSION ?= v0.22.0
 
+# Version of golangci-lint (keep in sync with .github/workflows/lint.yaml)
+GOLANGCI_LINT_VERSION ?= v2.13.1
+
 all: manager
 
 # Run tests
@@ -48,6 +51,18 @@ ifndef ignore-not-found
 endif
 undeploy:
 	kustomize build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
+# Run golangci-lint
+lint: golangci-lint
+	$(GOLANGCI_LINT) run
+
+# Run golangci-lint and apply fixes
+lint-fix: golangci-lint
+	$(GOLANGCI_LINT) run --fix
+
+# Verify the golangci-lint configuration
+lint-config: golangci-lint
+	$(GOLANGCI_LINT) config verify
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -86,4 +101,17 @@ controller-gen:
 	fi
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 
-.PHONY: all test manager run install uninstall deploy undeploy manifests fmt vet generate docker-build docker-buildx docker-push controller-gen
+# find or download golangci-lint
+# download golangci-lint if necessary
+golangci-lint:
+	@if [ "$$($(GOLANGCI_LINT) version --short 2>/dev/null)" != "$(GOLANGCI_LINT_VERSION:v%=%)" ]; then \
+		GOBIN=$(GOBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
+	fi
+	@test -f .custom-gcl.yml && { \
+		echo "Building custom golangci-lint with plugins..." && \
+		$(GOLANGCI_LINT) custom --destination $(GOBIN) --name golangci-lint-custom && \
+		mv -f $(GOBIN)/golangci-lint-custom $(GOLANGCI_LINT); \
+	} || true
+GOLANGCI_LINT=$(GOBIN)/golangci-lint
+
+.PHONY: all test manager run install uninstall deploy undeploy manifests fmt vet generate docker-build docker-buildx docker-push controller-gen lint lint-fix lint-config golangci-lint

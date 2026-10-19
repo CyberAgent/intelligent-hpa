@@ -126,7 +126,7 @@ func (d *Datadog) send(baseurl string, metricName string, timestamp int64, point
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusAccepted {
 		b, err := io.ReadAll(resp.Body)
 		if err != nil {

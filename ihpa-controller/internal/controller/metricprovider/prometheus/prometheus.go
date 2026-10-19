@@ -108,7 +108,7 @@ func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tag
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		b, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -171,7 +171,7 @@ func (p *Prometheus) Fetch(metricName string, timestamp int64, tags []string, op
 	if err != nil {
 		return 0.0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		b, err := io.ReadAll(resp.Body)
 		if err != nil {

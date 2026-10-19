@@ -143,11 +143,11 @@ func TestDatadogRequest(t *testing.T) {
 			w.WriteHeader(c.statusCode)
 			body, err := os.Open(c.bodyPath)
 			if err != nil {
-				fmt.Fprintf(w, `{"error": "file open error: %s"}`, c.bodyPath)
+				_, _ = fmt.Fprintf(w, `{"error": "file open error: %s"}`, c.bodyPath)
 				return
 			}
 
-			io.Copy(w, body)
+			_, _ = io.Copy(w, body)
 		})
 	}
 	server := httptest.NewServer(mux)

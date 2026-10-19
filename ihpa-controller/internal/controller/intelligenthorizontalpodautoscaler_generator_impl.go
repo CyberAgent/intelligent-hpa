@@ -515,11 +515,10 @@ func (g *ihpaGeneratorImpl) uniqueMetricHash(metric *autoscalingv2.MetricSpec) [
 	targetName := g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.ScaleTargetRef.Name
 
 	h := md5.New()
-	io.WriteString(h, metricName)
-	io.WriteString(h, correspondForecastedMetricName(metricName))
-	io.WriteString(h, g.ihpa.GetNamespace())
-	io.WriteString(h, targetKind)
-	io.WriteString(h, targetName)
+	// hash.Hash.Write never returns an error
+	for _, s := range []string{metricName, correspondForecastedMetricName(metricName), g.ihpa.GetNamespace(), targetKind, targetName} {
+		_, _ = io.WriteString(h, s)
+	}
 	return h.Sum(nil)
 }
 

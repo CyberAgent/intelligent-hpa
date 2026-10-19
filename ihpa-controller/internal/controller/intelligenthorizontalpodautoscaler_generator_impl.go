@@ -121,19 +121,19 @@ func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2.Ho
 	}
 
 	extendedMetrics := g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.Metrics
-	metrics := make([]autoscalingv2.MetricSpec, len(extendedMetrics))
+	baseMetrics := make([]autoscalingv2.MetricSpec, len(extendedMetrics))
 	for i := range extendedMetrics {
-		metrics[i] = *(extendedMetrics[i].MetricSpec())
+		baseMetrics[i] = *(extendedMetrics[i].MetricSpec())
 	}
-	forecastedMetrics := make([]autoscalingv2.MetricSpec, len(metrics))
-	for i := range metrics {
-		f, err := g.generateForecastedMetricSpec(&metrics[i])
+	metrics := make([]autoscalingv2.MetricSpec, 0, 2*len(baseMetrics))
+	metrics = append(metrics, baseMetrics...)
+	for i := range baseMetrics {
+		f, err := g.generateForecastedMetricSpec(&baseMetrics[i])
 		if err != nil {
 			return nil, err
 		}
-		forecastedMetrics[i] = *f
+		metrics = append(metrics, *f)
 	}
-	metrics = append(metrics, forecastedMetrics...)
 
 	hpa.Spec = autoscalingv2.HorizontalPodAutoscalerSpec{
 		ScaleTargetRef: *g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.ScaleTargetRef.DeepCopy(),

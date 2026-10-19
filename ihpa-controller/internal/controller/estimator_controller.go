@@ -171,8 +171,3 @@ func (r *EstimatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.ConfigMap{}).
 		Complete(r)
 }
-
-//go:fix inline
-func ptrToInt(v int) *int {
-	return new(v)
-}

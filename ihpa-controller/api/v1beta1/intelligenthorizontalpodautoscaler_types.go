@@ -164,5 +164,5 @@ type IntelligentHorizontalPodAutoscalerList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&IntelligentHorizontalPodAutoscaler{}, &IntelligentHorizontalPodAutoscalerList{})
+	registerTypes(&IntelligentHorizontalPodAutoscaler{}, &IntelligentHorizontalPodAutoscalerList{})
 }

@@ -83,5 +83,5 @@ type EstimatorList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Estimator{}, &EstimatorList{})
+	registerTypes(&Estimator{}, &EstimatorList{})
 }

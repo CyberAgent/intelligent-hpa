@@ -132,7 +132,7 @@ func (d *Datadog) send(baseurl string, metricName string, timestamp int64, point
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Request error: %s (code=%d, json=%s)", string(b), resp.StatusCode, string(tsjson))
+		return fmt.Errorf("request error: %s (code=%d, json=%s)", string(b), resp.StatusCode, string(tsjson))
 	}
 
 	// edit unit metadata of metric
@@ -171,7 +171,7 @@ func (d *Datadog) getUnit(baseurl, metricName string) (string, string, error) {
 		if err != nil {
 			return "", "", err
 		}
-		return "", "", fmt.Errorf("Request error: %s (code=%d, metricName=%s)", string(b), resp.StatusCode, metricName)
+		return "", "", fmt.Errorf("request error: %s (code=%d, metricName=%s)", string(b), resp.StatusCode, metricName)
 	}
 
 	var j any
@@ -215,7 +215,7 @@ func (d *Datadog) setUnit(baseurl, metricName string, metricType string, metricU
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Request error: %s (code=%d, body=%s)", string(b), resp.StatusCode, body)
+		return fmt.Errorf("request error: %s (code=%d, body=%s)", string(b), resp.StatusCode, body)
 	}
 
 	return nil
@@ -265,7 +265,7 @@ func (d *Datadog) fetch(baseurl, metricName string, timestamp int64, tags []stri
 		if err != nil {
 			return datapoint{}, err
 		}
-		return datapoint{}, fmt.Errorf("Request error: %s (code=%d, url=%s)", string(b), resp.StatusCode, url)
+		return datapoint{}, fmt.Errorf("request error: %s (code=%d, url=%s)", string(b), resp.StatusCode, url)
 	}
 
 	var j any

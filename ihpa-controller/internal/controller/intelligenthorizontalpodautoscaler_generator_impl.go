@@ -315,7 +315,7 @@ func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2.
 	case "Pods":
 		metricIdentifier = metric.Pods.Metric.DeepCopy()
 	default:
-		return nil, fmt.Errorf("%s metric is not supported yet.", metric.Type)
+		return nil, fmt.Errorf("%s metric is not supported yet", metric.Type)
 	}
 
 	return metricIdentifier, nil

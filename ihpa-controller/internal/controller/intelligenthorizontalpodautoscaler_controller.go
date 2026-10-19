@@ -69,6 +69,7 @@ type IntelligentHorizontalPodAutoscalerReconciler struct {
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
+//nolint:gocyclo // Reconcile will be reworked for the KEDA support, so splitting it now would only conflict with that change.
 func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("intelligenthorizontalpodautoscaler", req.NamespacedName)
 	ihpaNamespacedName := req.String()

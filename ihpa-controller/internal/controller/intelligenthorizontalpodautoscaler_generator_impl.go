@@ -65,8 +65,8 @@ func NewIntelligentHorizontalPodAutoscalerGenerator(
 	rl := *totalResourceList(containers)
 
 	// Resolve Datadog API/APP keys from Secrets/ConfigMaps if KeysFrom is specified
-	if ihpa.Spec.MetricProvider.ProviderSource.Datadog != nil && len(ihpa.Spec.MetricProvider.ProviderSource.Datadog.KeysFrom) > 0 {
-		if err := resolveDatadogKeysFromEnv(ctx, r.Client, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.ProviderSource.Datadog); err != nil {
+	if ihpa.Spec.MetricProvider.Datadog != nil && len(ihpa.Spec.MetricProvider.Datadog.KeysFrom) > 0 {
+		if err := resolveDatadogKeysFromEnv(ctx, r.Client, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.Datadog); err != nil {
 			return nil, fmt.Errorf("failed to resolve datadog keys from env: %w", err)
 		}
 	}
@@ -221,7 +221,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 
 	// forecasted value is single data point, but it expected to sum value,
 	// so we have to store the avg value to AverageValue field.
-	// (AverageValue must be devided by number of replicas.)
+	// (AverageValue must be divided by number of replicas.)
 	metricTarget.Type = "AverageValue"
 	metricTarget.AverageValue = &avgValue
 

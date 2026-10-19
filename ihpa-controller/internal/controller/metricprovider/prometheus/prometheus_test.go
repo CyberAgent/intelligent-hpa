@@ -93,11 +93,11 @@ func TestPrometheusFetch(t *testing.T) {
 				Result: []queryResult{
 					{
 						Metric: map[string]string{"host": "server1"},
-						Value:  []interface{}{1609459200, "42.5"},
+						Value:  []any{1609459200, "42.5"},
 					},
 					{
 						Metric: map[string]string{"host": "server2"},
-						Value:  []interface{}{1609459200, "10.0"},
+						Value:  []any{1609459200, "10.0"},
 					},
 				},
 			},
@@ -137,7 +137,7 @@ func TestPrometheusFetchWithAggregator(t *testing.T) {
 				Result: []queryResult{
 					{
 						Metric: map[string]string{"namespace": "ihpa-test"},
-						Value:  []interface{}{1609459200, "42.5"},
+						Value:  []any{1609459200, "42.5"},
 					},
 				},
 			},

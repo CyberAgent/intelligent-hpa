@@ -71,7 +71,7 @@ type IntelligentHorizontalPodAutoscalerReconciler struct {
 
 func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("intelligenthorizontalpodautoscaler", req.NamespacedName)
-	ihpaNamespacedName := req.NamespacedName.String()
+	ihpaNamespacedName := req.String()
 
 	var ihpa ihpav1beta2.IntelligentHorizontalPodAutoscaler
 	if err := r.Get(ctx, req.NamespacedName, &ihpa); err != nil {
@@ -268,14 +268,14 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		}
 
 		// unregister from estimator
-		for id, _ := range deleteIds {
+		for id := range deleteIds {
 			delete(r.fittingJobMap[ihpaNamespacedName], id)
 		}
 	}
 
 	// * update fittingjob ids annotation
 	var fjIdsStr string
-	for k, _ := range currentIds {
+	for k := range currentIds {
 		fjIdsStr += k + ","
 	}
 	fjIdsStr = strings.TrimRight(fjIdsStr, ",")

@@ -31,7 +31,7 @@ func correspondForecastedMetricName(metricName string) string {
 // replaceString replaces m.key to m.value in string s.
 func replaceStrings(s string, m map[string]string) string {
 	for before, after := range m {
-		s = strings.Replace(s, before, after, -1)
+		s = strings.ReplaceAll(s, before, after)
 	}
 	return s
 }

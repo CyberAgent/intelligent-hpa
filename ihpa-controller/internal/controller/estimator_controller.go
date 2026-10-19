@@ -123,7 +123,7 @@ func (r *EstimatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			Patch: &EstimateTargetPatch{
 				ID:             req.String(),
 				EstimateMode:   &est.Spec.Mode,
-				GapMinutes:     ptrToInt(int(est.Spec.GapMinutes)),
+				GapMinutes:     new(int(est.Spec.GapMinutes)),
 				MetricName:     &est.Spec.MetricName,
 				MetricTags:     &est.Spec.MetricTags,
 				BaseMetricName: &est.Spec.BaseMetricName,
@@ -135,7 +135,7 @@ func (r *EstimatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// * check data and send the data to estimator
 	key := est.Spec.BaseMetricName
-	var in interface{}
+	var in any
 	if d, ok := cm.BinaryData[key]; ok {
 		in = d
 	}
@@ -172,6 +172,7 @@ func (r *EstimatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+//go:fix inline
 func ptrToInt(v int) *int {
-	return &v
+	return new(v)
 }

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"sort"
@@ -63,11 +63,11 @@ type datapoint struct {
 }
 
 type timeseriesItem struct {
-	Metric     string          `json:"metric"`
-	Points     []datapoint     `json:"-"`
-	TmpPoints  [][]interface{} `json:"points"`
-	MetricType string          `json:"type,omitempty"`
-	Tags       []string        `json:"tags"`
+	Metric     string      `json:"metric"`
+	Points     []datapoint `json:"-"`
+	TmpPoints  [][]any     `json:"points"`
+	MetricType string      `json:"type,omitempty"`
+	Tags       []string    `json:"tags"`
 }
 
 type timeseries struct {
@@ -76,9 +76,9 @@ type timeseries struct {
 
 // MarshalJSON convert array of datapoint to array of interface{} as proprocess.
 func (ts *timeseriesItem) MarshalJSON() ([]byte, error) {
-	ts.TmpPoints = make([][]interface{}, len(ts.Points))
+	ts.TmpPoints = make([][]any, len(ts.Points))
 	for i, dp := range ts.Points {
-		ts.TmpPoints[i] = []interface{}{dp.unixtime, dp.point}
+		ts.TmpPoints[i] = []any{dp.unixtime, dp.point}
 	}
 
 	// avoid cyclic call
@@ -86,7 +86,7 @@ func (ts *timeseriesItem) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct{ T }{T: T(*ts)})
 }
 
-func (d *Datadog) Send(metricName string, timestamp int64, point float64, tags []string, opts map[string]interface{}) error {
+func (d *Datadog) Send(metricName string, timestamp int64, point float64, tags []string, opts map[string]any) error {
 	var metricUnitReference string
 	if v, ok := opts["metricUnitReference"]; ok {
 		metricUnitReference = v.(string)
@@ -127,7 +127,7 @@ func (d *Datadog) send(baseurl string, metricName string, timestamp int64, point
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusAccepted {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -166,25 +166,25 @@ func (d *Datadog) getUnit(baseurl, metricName string) (string, string, error) {
 		return "", "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", "", err
 		}
 		return "", "", fmt.Errorf("Request error: %s (code=%d, metricName=%s)", string(b), resp.StatusCode, metricName)
 	}
 
-	var j interface{}
+	var j any
 	if err = json.NewDecoder(resp.Body).Decode(&j); err != nil {
 		return "", "", fmt.Errorf("decode failed: %w", err)
 	}
 
 	var mtype, munit string
-	if v, ok := j.(map[string]interface{})["type"]; ok {
+	if v, ok := j.(map[string]any)["type"]; ok {
 		if v != nil {
 			mtype = v.(string)
 		}
 	}
-	if v, ok := j.(map[string]interface{})["unit"]; ok {
+	if v, ok := j.(map[string]any)["unit"]; ok {
 		if v != nil {
 			munit = v.(string)
 		}
@@ -210,7 +210,7 @@ func (d *Datadog) setUnit(baseurl, metricName string, metricType string, metricU
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -220,7 +220,7 @@ func (d *Datadog) setUnit(baseurl, metricName string, metricType string, metricU
 	return nil
 }
 
-func (d *Datadog) Fetch(metricName string, timestamp int64, tags []string, opts map[string]interface{}) (float64, error) {
+func (d *Datadog) Fetch(metricName string, timestamp int64, tags []string, opts map[string]any) (float64, error) {
 	baseURL, err := datadogBaseURL()
 	if err != nil {
 		return 0, err
@@ -260,14 +260,14 @@ func (d *Datadog) fetch(baseurl, metricName string, timestamp int64, tags []stri
 		return datapoint{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return datapoint{}, err
 		}
 		return datapoint{}, fmt.Errorf("Request error: %s (code=%d, url=%s)", string(b), resp.StatusCode, url)
 	}
 
-	var j interface{}
+	var j any
 	if err = json.NewDecoder(resp.Body).Decode(&j); err != nil {
 		return datapoint{}, err
 	}
@@ -298,16 +298,16 @@ func binarySearchNearTimestamp(dps []datapoint, timestamp int64) datapoint {
 }
 
 // mergeAllSeriesDatapointToOne merge all series datapoints to single datapoints (sum up).
-func mergeAllSeriesDatapointToOne(j interface{}) []datapoint {
+func mergeAllSeriesDatapointToOne(j any) []datapoint {
 	var dps []datapoint
-	if series, ok := j.(map[string]interface{})["series"]; ok {
+	if series, ok := j.(map[string]any)["series"]; ok {
 		// 20min duration query -> jq ".series[0].pointlist | length" -> 229
-		dps = make([]datapoint, 0, 300*len(series.([]interface{})))
+		dps = make([]datapoint, 0, 300*len(series.([]any)))
 
-		for _, s := range series.([]interface{}) {
-			if pointlist, ok := s.(map[string]interface{})["pointlist"]; ok {
-				for _, p := range pointlist.([]interface{}) {
-					tsPtPair, ok := p.([]interface{})
+		for _, s := range series.([]any) {
+			if pointlist, ok := s.(map[string]any)["pointlist"]; ok {
+				for _, p := range pointlist.([]any) {
+					tsPtPair, ok := p.([]any)
 					if len(tsPtPair) < 2 || !ok {
 						continue
 					}

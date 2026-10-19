@@ -104,8 +104,7 @@ func (q *PastEstimateDatumQueue) peek() *EstimateDatum {
 	if len(*q) == 0 {
 		return nil
 	}
-	var d EstimateDatum
-	d = (*q)[0]
+	var d EstimateDatum = (*q)[0]
 	return &d
 }
 func (q *PastEstimateDatumQueue) seekByUnixTime(u int64) *EstimateDatum {
@@ -287,7 +286,7 @@ estimatorLoop:
 					data[position].EstimateUnixTime,
 					datapoint,
 					et.MetricTags,
-					map[string]interface{}{"metricUnitReference": et.BaseMetricName},
+					map[string]any{"metricUnitReference": et.BaseMetricName},
 				); err != nil {
 					et.V(LogicMessageLogLevel).Info("failed to send metric data", "metric_name", metricName, "error_msg", err)
 				}

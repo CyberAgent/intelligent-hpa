@@ -426,7 +426,7 @@ func TestMergeAllSeriesDatapointToOne(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var v interface{}
+		var v any
 		if err := json.Unmarshal([]byte(tt.j), &v); err != nil {
 			t.Fatal(err)
 		}

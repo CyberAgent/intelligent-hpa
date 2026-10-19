@@ -3,7 +3,7 @@ package prometheus
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,7 +55,7 @@ type queryData struct {
 
 type queryResult struct {
 	Metric map[string]string `json:"metric"`
-	Value  []interface{}     `json:"value"`
+	Value  []any             `json:"value"`
 }
 
 // convertTagsToPrometheusFormat converts tags from "key:value" format
@@ -81,7 +81,7 @@ func sanitizeMetricNameForPrometheus(metricName string) string {
 }
 
 // Send sends a metric to Prometheus via Pushgateway.
-func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tags []string, opts map[string]interface{}) error {
+func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tags []string, opts map[string]any) error {
 	if p.PushgatewayURL == "" {
 		return fmt.Errorf("pushgatewayURL is not configured")
 	}
@@ -110,7 +110,7 @@ func (p *Prometheus) Send(metricName string, timestamp int64, point float64, tag
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func insertLabels(expr string, labelSelector string) string {
 }
 
 // Fetch queries a metric from Prometheus at the specified timestamp.
-func (p *Prometheus) Fetch(metricName string, timestamp int64, tags []string, opts map[string]interface{}) (float64, error) {
+func (p *Prometheus) Fetch(metricName string, timestamp int64, tags []string, opts map[string]any) (float64, error) {
 	if p.URL == "" {
 		return 0.0, fmt.Errorf("prometheus URL is not configured")
 	}
@@ -173,7 +173,7 @@ func (p *Prometheus) Fetch(metricName string, timestamp int64, tags []string, op
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return 0.0, err
 		}

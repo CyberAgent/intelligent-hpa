@@ -274,14 +274,6 @@ func (d *Datadog) fetch(baseurl, metricName string, timestamp int64, tags []stri
 
 	sortedDps := mergeAllSeriesDatapointToOne(j)
 
-	//var debugStr string
-	//for _, dp := range sortedDps {
-	//	t := time.Unix(dp.unixtime, 0).String()
-	//	s := strconv.FormatFloat(dp.point, 'f', 3, 64)
-	//	debugStr += fmt.Sprintf("{%s (%s)} ", t, s)
-	//}
-	//log.Printf("%s", debugStr)
-
 	return binarySearchNearTimestamp(sortedDps, timestamp), nil
 }
 

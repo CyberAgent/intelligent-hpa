@@ -18,7 +18,7 @@ package main
 
 import (
 	"flag"
-	//_ "net/http/pprof"
+	// _ "net/http/pprof"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -102,9 +102,9 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
-	//go func() {
-	//	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
-	//}()
+	// go func() {
+	// 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
+	// }()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

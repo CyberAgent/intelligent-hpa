@@ -284,7 +284,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 	if err := r.Update(ctx, &ihpa); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update ihpa resource: %w", err)
 	}
-	log.V(ResourceMessageLogLevel).Info("successed to apply annotation", fittingJobIDsAnnotation, fjIdsStr)
+	log.V(ResourceMessageLogLevel).Info("successed to apply annotation", "annotation", fittingJobIDsAnnotation, "value", fjIdsStr)
 
 	// * create/update status configmap
 	statusCM, err := g.StatusConfigMapResource()

@@ -105,7 +105,7 @@ func (q *PastEstimateDatumQueue) peek() *EstimateDatum {
 	if len(*q) == 0 {
 		return nil
 	}
-	var d EstimateDatum = (*q)[0]
+	d := (*q)[0]
 	return &d
 }
 func (q *PastEstimateDatumQueue) seekByUnixTime(u int64) *EstimateDatum {

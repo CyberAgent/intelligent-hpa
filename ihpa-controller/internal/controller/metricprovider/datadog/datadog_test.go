@@ -48,26 +48,29 @@ func TestDatadogSeriesMarshalJSON(t *testing.T) {
 }
 
 func TestDatadogMarshalJSON(t *testing.T) {
+	const tag2Value = "tag2"
+	const testValue = "test"
+	const tag1Value = "tag1"
 	tests := []struct {
 		input    timeseriesItem
 		expected string
 	}{
 		{
 			input: timeseriesItem{
-				Metric: "test",
+				Metric: testValue,
 				Points: []datapoint{
 					{
 						unixtime: 100,
 						point:    10.0,
 					},
 				},
-				Tags: []string{"tag1", "tag2"},
+				Tags: []string{tag1Value, tag2Value},
 			},
 			expected: `{"metric":"test","points":[[100,10]],"tags":["tag1","tag2"]}`,
 		},
 		{
 			input: timeseriesItem{
-				Metric: "test",
+				Metric: testValue,
 				Points: []datapoint{
 					{
 						unixtime: 100,
@@ -78,7 +81,7 @@ func TestDatadogMarshalJSON(t *testing.T) {
 						point:    11.5,
 					},
 				},
-				Tags: []string{"tag1", "tag2"},
+				Tags: []string{tag1Value, tag2Value},
 			},
 			expected: `{"metric":"test","points":[[100,10],[101,11.5]],"tags":["tag1","tag2"]}`,
 		},
@@ -158,7 +161,9 @@ func TestDatadogRequest(t *testing.T) {
 }
 
 func testDatadogUnit(url string, t *testing.T) {
-	d := &Datadog{APIKey: "xxx", APPKey: "yyy"}
+	const yyyValue = "yyy"
+	const xxxValue = "xxx"
+	d := &Datadog{APIKey: xxxValue, APPKey: yyyValue}
 	mtype, munit, err := d.getUnit(url, "kubernetes.cpu.usage.total")
 	if err != nil {
 		t.Fatal(err)

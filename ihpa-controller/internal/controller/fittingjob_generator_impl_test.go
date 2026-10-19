@@ -15,20 +15,47 @@ import (
 )
 
 func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorImpl) {
+	const trueValue2 = "true"
+	const envvalValue2 = "envval"
+	const arg2Value2 = "arg2"
+	const zoneValue2 = "zone"
+	const yyyValue = "yyy"
+	const xxxValue = "xxx"
+	const volume1Value2 = "volume1"
+	const testValue = "test"
+	const secret1Value = "secret1"
+	const sample2Value3 = "sample2"
+	const sample1Value3 = "sample1"
+	const sa1Value2 = "sa1"
+	const masterValue2 = "master"
+	const ihpaAkeCyberagentCoJpV1beta2Value = "ihpa.ake.cyberagent.co.jp/v1beta2"
+	const gpuValue2 = "gpu"
+	const env1Value2 = "env1"
+	const defaultValue3 = "default"
+	const dailyValue = "daily"
+	const cyberagentossIntelligentHpaFittingjobV1Value = "cyberagentoss/intelligent-hpa-fittingjob:v1"
+	const command1Value2 = "command1"
+	const cm1Value2 = "cm1"
+	const autoValue = "auto"
+	const arg1Value2 = "arg1"
+	const appValue2 = "app"
+	const noScheduleValue = "NoSchedule"
+	const equalValue = "Equal"
+	const id9fc642f3Bb9d404dAfd5D04f1d6149adValue2 = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
 	t.Helper()
 	sample1 = &fittingJobGeneratorImpl{
 		fj: &ihpav1beta2.FittingJob{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "sample1",
-				Namespace: "default",
-				UID:       "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+				Name:      sample1Value3,
+				Namespace: defaultValue3,
+				UID:       id9fc642f3Bb9d404dAfd5D04f1d6149adValue2,
 			},
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "FittingJob",
-				APIVersion: "ihpa.ake.cyberagent.co.jp/v1beta2",
+				APIVersion: ihpaAkeCyberagentCoJpV1beta2Value,
 			},
 			Spec: ihpav1beta2.FittingJobSpec{
-				Seasonality: "auto",
+				Seasonality: autoValue,
 				ExecuteOn:   4,
 				ChangePointDetectionConfig: ihpav1beta2.ChangePointDetectionConfig{
 					PercentageThreshold: 50,
@@ -62,8 +89,8 @@ func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorIm
 					Name: "anyprovider",
 					ProviderSource: ihpav1beta2.ProviderSource{
 						Datadog: &ihpav1beta2.DatadogProviderSource{
-							APIKey: "xxx",
-							APPKey: "yyy",
+							APIKey: xxxValue,
+							APPKey: yyyValue,
 						},
 					},
 				},
@@ -74,16 +101,16 @@ func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorIm
 	sample2 = &fittingJobGeneratorImpl{
 		fj: &ihpav1beta2.FittingJob{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "sample2",
-				Namespace: "test",
-				UID:       "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+				Name:      sample2Value3,
+				Namespace: testValue,
+				UID:       id9fc642f3Bb9d404dAfd5D04f1d6149adValue2,
 			},
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "FittingJob",
-				APIVersion: "ihpa.ake.cyberagent.co.jp/v1beta2",
+				APIVersion: ihpaAkeCyberagentCoJpV1beta2Value,
 			},
 			Spec: ihpav1beta2.FittingJobSpec{
-				Seasonality: "daily",
+				Seasonality: dailyValue,
 				ExecuteOn:   5,
 				DataConfigMap: corev1.LocalObjectReference{
 					Name: "data-configmap2",
@@ -94,52 +121,52 @@ func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorIm
 					BackoffLimit:          func(i int32) *int32 { return &i }(5),
 					Completions:           func(i int32) *int32 { return &i }(10),
 					// related to Pod
-					ImagePullSecrets: []corev1.LocalObjectReference{{Name: "secret1"}},
+					ImagePullSecrets: []corev1.LocalObjectReference{{Name: secret1Value}},
 					Affinity: &corev1.Affinity{
 						PodAntiAffinity: &corev1.PodAntiAffinity{
 							PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
 								{
 									Weight: 50,
 									PodAffinityTerm: corev1.PodAffinityTerm{
-										TopologyKey: "zone",
+										TopologyKey: zoneValue2,
 										LabelSelector: &metav1.LabelSelector{
-											MatchLabels: map[string]string{"app": "a"},
+											MatchLabels: map[string]string{appValue2: "a"},
 										},
 									},
 								},
 							},
 						},
 					},
-					NodeSelector: map[string]string{"gpu": "true"},
+					NodeSelector: map[string]string{gpuValue2: trueValue2},
 					Tolerations: []corev1.Toleration{
 						{
-							Key:      "master",
-							Operator: "Equal",
-							Value:    "true",
-							Effect:   "NoSchedule",
+							Key:      masterValue2,
+							Operator: equalValue,
+							Value:    trueValue2,
+							Effect:   noScheduleValue,
 						},
 					},
-					ServiceAccountName: "sa1",
+					ServiceAccountName: sa1Value2,
 					Volumes: []corev1.Volume{
 						{
-							Name: "volume1",
+							Name: volume1Value2,
 							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{SecretName: "secret1"},
+								Secret: &corev1.SecretVolumeSource{SecretName: secret1Value},
 							},
 						},
 					},
 					// related to Container
-					Image:           "cyberagentoss/intelligent-hpa-fittingjob:v1",
+					Image:           cyberagentossIntelligentHpaFittingjobV1Value,
 					ImagePullPolicy: corev1.PullPolicy("Always"),
-					Args:            []string{"arg1", "arg2"},
-					Command:         []string{"command1"},
+					Args:            []string{arg1Value2, arg2Value2},
+					Command:         []string{command1Value2},
 					Env: []corev1.EnvVar{
-						{Name: "env1", Value: "envval"},
+						{Name: env1Value2, Value: envvalValue2},
 					},
 					EnvFrom: []corev1.EnvFromSource{
 						{
 							ConfigMapRef: &corev1.ConfigMapEnvSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "cm1"},
+								LocalObjectReference: corev1.LocalObjectReference{Name: cm1Value2},
 							},
 						},
 					},
@@ -164,8 +191,8 @@ func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorIm
 					Name: "datadog",
 					ProviderSource: ihpav1beta2.ProviderSource{
 						Datadog: &ihpav1beta2.DatadogProviderSource{
-							APIKey: "xxx",
-							APPKey: "yyy",
+							APIKey: xxxValue,
+							APPKey: yyyValue,
 						},
 					},
 				},
@@ -176,6 +203,13 @@ func testFittingJobSample(t *testing.T) (sample1, sample2 *fittingJobGeneratorIm
 }
 
 func TestFittingJobConfigMapResource(t *testing.T) {
+	const sample2Value2 = "sample2"
+	const sample1Value2 = "sample1"
+	const ihpaAkeCyberagentCoJpV1beta2 = "ihpa.ake.cyberagent.co.jp/v1beta2"
+	const defaultValue2 = "default"
+	const configJson = "config.json"
+	const fittingJobIhpaAkeCyberagentCoJp = "FittingJob.ihpa.ake.cyberagent.co.jp"
+	const id9fc642f3Bb9d404dAfd5D04f1d6149adValue = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
 	sample1, sample2 := testFittingJobSample(t)
 	tests := []struct {
 		base               *fittingJobGeneratorImpl
@@ -186,20 +220,20 @@ func TestFittingJobConfigMapResource(t *testing.T) {
 			base: sample1,
 			expectedObjectMeta: metav1.ObjectMeta{
 				Name:      "sample1-config",
-				Namespace: "default",
+				Namespace: defaultValue2,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta2",
+						APIVersion:         ihpaAkeCyberagentCoJpV1beta2,
 						Controller:         func(b bool) *bool { return &b }(true),
 						BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-						Kind:               "FittingJob.ihpa.ake.cyberagent.co.jp",
-						Name:               "sample1",
-						UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						Kind:               fittingJobIhpaAkeCyberagentCoJp,
+						Name:               sample1Value2,
+						UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue,
 					},
 				},
 			},
 			expectedData: map[string]string{
-				"config.json": `
+				configJson: `
 				{
 					"provider":{
 						"datadog":{
@@ -235,17 +269,17 @@ func TestFittingJobConfigMapResource(t *testing.T) {
 				Namespace: "test",
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta2",
+						APIVersion:         ihpaAkeCyberagentCoJpV1beta2,
 						Controller:         func(b bool) *bool { return &b }(true),
 						BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-						Kind:               "FittingJob.ihpa.ake.cyberagent.co.jp",
-						Name:               "sample2",
-						UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						Kind:               fittingJobIhpaAkeCyberagentCoJp,
+						Name:               sample2Value2,
+						UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue,
 					},
 				},
 			},
 			expectedData: map[string]string{
-				"config.json": `
+				configJson: `
 				{
 					"provider":{
 						"datadog":{
@@ -277,7 +311,7 @@ func TestFittingJobConfigMapResource(t *testing.T) {
 			t.Fatalf("configmap objectmeta is not match (got=%v, exp=%v)", got, tt.expectedObjectMeta)
 		}
 
-		configName := "config.json"
+		configName := configJson
 		var gotConfig, expConfig any
 		if err := json.Unmarshal([]byte(got.Data[configName]), &gotConfig); err != nil {
 			t.Fatalf("got data cannot be unmarshal (got=%v): %v", got.Data[configName], err)
@@ -293,6 +327,27 @@ func TestFittingJobConfigMapResource(t *testing.T) {
 }
 
 func TestFittingJobCronJobResource(t *testing.T) {
+	const trueValue = "true"
+	const envvalValue = "envval"
+	const arg2Value = "arg2"
+	const zoneValue = "zone"
+	const volume1Value = "volume1"
+	const sample2Value = "sample2"
+	const sample1Value = "sample1"
+	const sa1Value = "sa1"
+	const masterValue = "master"
+	const gpuValue = "gpu"
+	const fittingjobConfig = "fittingjob-config"
+	const env1Value = "env1"
+	const defaultValue = "default"
+	const cyberagentossIntelligentHpaFittingjobV1 = "cyberagentoss/intelligent-hpa-fittingjob:v1"
+	const command1Value = "command1"
+	const cm1Value = "cm1"
+	const arg1Value = "arg1"
+	const appValue = "app"
+	const noSchedule = "NoSchedule"
+	const equal = "Equal"
+	const id9fc642f3Bb9d404dAfd5D04f1d6149ad = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
 	sample1, sample2 := testFittingJobSample(t)
 	tests := []struct {
 		base     *fittingJobGeneratorImpl
@@ -302,16 +357,16 @@ func TestFittingJobCronJobResource(t *testing.T) {
 			base: sample1,
 			expected: &batchv1beta1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sample1",
-					Namespace: "default",
+					Name:      sample1Value,
+					Namespace: defaultValue,
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta2",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
 							Kind:               "FittingJob.ihpa.ake.cyberagent.co.jp",
-							Name:               "sample1",
-							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+							Name:               sample1Value,
+							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
 						},
 					},
 				},
@@ -331,7 +386,7 @@ func TestFittingJobCronJobResource(t *testing.T) {
 											Image: "fittingjob-image:v1",
 											VolumeMounts: []corev1.VolumeMount{
 												{
-													Name:      "fittingjob-config",
+													Name:      fittingjobConfig,
 													MountPath: "/fittingjob-config",
 												},
 											},
@@ -339,7 +394,7 @@ func TestFittingJobCronJobResource(t *testing.T) {
 									},
 									Volumes: []corev1.Volume{
 										{
-											Name: "fittingjob-config",
+											Name: fittingjobConfig,
 											VolumeSource: corev1.VolumeSource{
 												ConfigMap: &corev1.ConfigMapVolumeSource{
 													LocalObjectReference: corev1.LocalObjectReference{Name: "sample1-config"},
@@ -358,7 +413,7 @@ func TestFittingJobCronJobResource(t *testing.T) {
 			base: sample2,
 			expected: &batchv1beta1.CronJob{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sample2",
+					Name:      sample2Value,
 					Namespace: "test",
 					OwnerReferences: []metav1.OwnerReference{
 						{
@@ -366,8 +421,8 @@ func TestFittingJobCronJobResource(t *testing.T) {
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
 							Kind:               "FittingJob.ihpa.ake.cyberagent.co.jp",
-							Name:               "sample2",
-							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+							Name:               sample2Value,
+							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
 						},
 					},
 				},
@@ -381,7 +436,7 @@ func TestFittingJobCronJobResource(t *testing.T) {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									RestartPolicy:      "OnFailure",
-									ServiceAccountName: "sa1",
+									ServiceAccountName: sa1Value,
 									ImagePullSecrets: []corev1.LocalObjectReference{
 										{Name: "secret1"},
 									},
@@ -391,33 +446,33 @@ func TestFittingJobCronJobResource(t *testing.T) {
 												{
 													Weight: 50,
 													PodAffinityTerm: corev1.PodAffinityTerm{
-														TopologyKey: "zone",
+														TopologyKey: zoneValue,
 														LabelSelector: &metav1.LabelSelector{
-															MatchLabels: map[string]string{"app": "a"},
+															MatchLabels: map[string]string{appValue: "a"},
 														},
 													},
 												},
 											},
 										},
 									},
-									NodeSelector: map[string]string{"gpu": "true"},
+									NodeSelector: map[string]string{gpuValue: trueValue},
 									Tolerations: []corev1.Toleration{
 										{
-											Key:      "master",
-											Operator: "Equal",
-											Value:    "true",
-											Effect:   "NoSchedule",
+											Key:      masterValue,
+											Operator: equal,
+											Value:    trueValue,
+											Effect:   noSchedule,
 										},
 									},
 									Volumes: []corev1.Volume{
 										{
-											Name: "volume1",
+											Name: volume1Value,
 											VolumeSource: corev1.VolumeSource{
 												Secret: &corev1.SecretVolumeSource{SecretName: "secret1"},
 											},
 										},
 										{
-											Name: "fittingjob-config",
+											Name: fittingjobConfig,
 											VolumeSource: corev1.VolumeSource{
 												ConfigMap: &corev1.ConfigMapVolumeSource{
 													LocalObjectReference: corev1.LocalObjectReference{Name: "sample2-config"},
@@ -428,17 +483,17 @@ func TestFittingJobCronJobResource(t *testing.T) {
 									Containers: []corev1.Container{
 										{
 											Name:            "fittingjob",
-											Image:           "cyberagentoss/intelligent-hpa-fittingjob:v1",
+											Image:           cyberagentossIntelligentHpaFittingjobV1,
 											ImagePullPolicy: corev1.PullPolicy("Always"),
-											Args:            []string{"arg1", "arg2"},
-											Command:         []string{"command1"},
+											Args:            []string{arg1Value, arg2Value},
+											Command:         []string{command1Value},
 											Env: []corev1.EnvVar{
-												{Name: "env1", Value: "envval"},
+												{Name: env1Value, Value: envvalValue},
 											},
 											EnvFrom: []corev1.EnvFromSource{
 												{
 													ConfigMapRef: &corev1.ConfigMapEnvSource{
-														LocalObjectReference: corev1.LocalObjectReference{Name: "cm1"},
+														LocalObjectReference: corev1.LocalObjectReference{Name: cm1Value},
 													},
 												},
 											},
@@ -452,11 +507,11 @@ func TestFittingJobCronJobResource(t *testing.T) {
 											},
 											VolumeMounts: []corev1.VolumeMount{
 												{
-													Name:      "volume1",
+													Name:      volume1Value,
 													MountPath: "/volume1",
 												},
 												{
-													Name:      "fittingjob-config",
+													Name:      fittingjobConfig,
 													MountPath: "/fittingjob-config",
 												},
 											},

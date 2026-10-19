@@ -38,14 +38,15 @@ func TestSanitizeForKubernetesResourceName(t *testing.T) {
 }
 
 func TestCorrespondForecastedMetricName(t *testing.T) {
+	const cpuValue2 = "cpu"
 	prefix := "ake.ihpa.forecasted_"
 	tests := []struct {
 		input    string
 		expected string
 	}{
 		{
-			input:    "cpu",
-			expected: prefix + "cpu",
+			input:    cpuValue2,
+			expected: prefix + cpuValue2,
 		},
 		{
 			input:    "nginx.net.request_per_s",
@@ -70,13 +71,14 @@ func TestCorrespondForecastedMetricName(t *testing.T) {
 }
 
 func TestReplaceStrings(t *testing.T) {
+	const helloValue = "hello"
 	tests := []struct {
 		input    string
 		m        map[string]string
 		expected string
 	}{
 		{
-			input:    "hello",
+			input:    helloValue,
 			m:        map[string]string{"h": "b"},
 			expected: "bello",
 		},
@@ -86,9 +88,9 @@ func TestReplaceStrings(t *testing.T) {
 			expected: "=.-==.-=",
 		},
 		{
-			input:    "hello",
+			input:    helloValue,
 			m:        map[string]string{"a": "b"},
-			expected: "hello",
+			expected: helloValue,
 		},
 	}
 
@@ -101,6 +103,12 @@ func TestReplaceStrings(t *testing.T) {
 }
 
 func TestExtractScopedMetricInfo(t *testing.T) {
+	const testSampleMetric = "test.sample-metric"
+	const requestsPerSecond = "requests-per-second"
+	const cpuValue = "cpu"
+	const utilization = "Utilization"
+	const object = "Object"
+	const averageValue = "AverageValue"
 	tests := []struct {
 		metric    autoscalingv2.MetricSpec
 		expected  string
@@ -110,35 +118,35 @@ func TestExtractScopedMetricInfo(t *testing.T) {
 			metric: autoscalingv2.MetricSpec{
 				Type: "Resource",
 				Resource: &autoscalingv2.ResourceMetricSource{
-					Name: "cpu",
+					Name: cpuValue,
 					Target: autoscalingv2.MetricTarget{
-						Type:               autoscalingv2.MetricTargetType("Utilization"),
+						Type:               autoscalingv2.MetricTargetType(utilization),
 						AverageUtilization: func(i int32) *int32 { return &i }(50),
 					},
 				},
 			},
-			expected: "cpu",
+			expected: cpuValue,
 			expTarget: &autoscalingv2.MetricTarget{
-				Type:               autoscalingv2.MetricTargetType("Utilization"),
+				Type:               autoscalingv2.MetricTargetType(utilization),
 				AverageUtilization: func(i int32) *int32 { return &i }(50),
 			},
 		},
 		{
 			metric: autoscalingv2.MetricSpec{
-				Type: "Object",
+				Type: object,
 				Object: &autoscalingv2.ObjectMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
-						Name: "requests-per-second",
+						Name: requestsPerSecond,
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:               autoscalingv2.MetricTargetType("Utilization"),
+						Type:               autoscalingv2.MetricTargetType(utilization),
 						AverageUtilization: func(i int32) *int32 { return &i }(60),
 					},
 				},
 			},
-			expected: "requests-per-second",
+			expected: requestsPerSecond,
 			expTarget: &autoscalingv2.MetricTarget{
-				Type:               autoscalingv2.MetricTargetType("Utilization"),
+				Type:               autoscalingv2.MetricTargetType(utilization),
 				AverageUtilization: func(i int32) *int32 { return &i }(60),
 			},
 		},
@@ -166,27 +174,27 @@ func TestExtractScopedMetricInfo(t *testing.T) {
 				Type: "External",
 				External: &autoscalingv2.ExternalMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
-						Name: "test.sample-metric",
+						Name: testSampleMetric,
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         autoscalingv2.MetricTargetType("AverageValue"),
+						Type:         autoscalingv2.MetricTargetType(averageValue),
 						AverageValue: resource.NewQuantity(20, "test2"),
 					},
 				},
 			},
-			expected: "test.sample-metric",
+			expected: testSampleMetric,
 			expTarget: &autoscalingv2.MetricTarget{
-				Type:         autoscalingv2.MetricTargetType("AverageValue"),
+				Type:         autoscalingv2.MetricTargetType(averageValue),
 				AverageValue: resource.NewQuantity(20, "test2"),
 			},
 		},
 		{
 			metric: autoscalingv2.MetricSpec{
-				Type: "Object",
+				Type: object,
 				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "resource_metrics",
 					Target: autoscalingv2.MetricTarget{
-						Type:               autoscalingv2.MetricTargetType("Utilization"),
+						Type:               autoscalingv2.MetricTargetType(utilization),
 						AverageUtilization: func(i int32) *int32 { return &i }(50),
 					},
 				},
@@ -195,14 +203,14 @@ func TestExtractScopedMetricInfo(t *testing.T) {
 						Name: "object_metrics",
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:               autoscalingv2.MetricTargetType("Utilization"),
+						Type:               autoscalingv2.MetricTargetType(utilization),
 						AverageUtilization: func(i int32) *int32 { return &i }(60),
 					},
 				},
 			},
 			expected: "object_metrics",
 			expTarget: &autoscalingv2.MetricTarget{
-				Type:               autoscalingv2.MetricTargetType("Utilization"),
+				Type:               autoscalingv2.MetricTargetType(utilization),
 				AverageUtilization: func(i int32) *int32 { return &i }(60),
 			},
 		},
@@ -229,6 +237,13 @@ func TestExtractScopedMetricInfo(t *testing.T) {
 }
 
 func TestGenerateMetricUniqueFilter(t *testing.T) {
+	const xxxValue2 = "xxx"
+	const webValue2 = "web"
+	const testValue = "test"
+	const sampleValue = "sample"
+	const kubeSystemUid = "kube_system_uid"
+	const kubeNamespace = "kube_namespace"
+	const defaultValue2 = "default"
 	tests := []struct {
 		kubeSystemUID string
 		namespace     string
@@ -238,24 +253,24 @@ func TestGenerateMetricUniqueFilter(t *testing.T) {
 	}{
 		{
 			kubeSystemUID: "14646643-26f2-4614-8cf8-a839f3185a12",
-			namespace:     "default",
+			namespace:     defaultValue2,
 			kind:          "Deployment",
-			name:          "test",
+			name:          testValue,
 			expected: map[string]string{
-				"kube_system_uid": "14646643-26f2-4614-8cf8-a839f3185a12",
-				"kube_namespace":  "default",
-				"kube_deployment": "test",
+				kubeSystemUid:     "14646643-26f2-4614-8cf8-a839f3185a12",
+				kubeNamespace:     defaultValue2,
+				"kube_deployment": testValue,
 			},
 		},
 		{
-			kubeSystemUID: "xxx",
-			namespace:     "web",
+			kubeSystemUID: xxxValue2,
+			namespace:     webValue2,
 			kind:          "StatefulSet",
-			name:          "sample",
+			name:          sampleValue,
 			expected: map[string]string{
-				"kube_system_uid":  "xxx",
-				"kube_namespace":   "web",
-				"kube_statefulset": "sample",
+				kubeSystemUid:      xxxValue2,
+				kubeNamespace:      webValue2,
+				"kube_statefulset": sampleValue,
 			},
 		},
 	}
@@ -372,6 +387,12 @@ func TestTotalResourceList(t *testing.T) {
 }
 
 func TestAddOwnerReference(t *testing.T) {
+	const xxxValue = "xxx"
+	const webValue = "web"
+	const ihpaAkeCyberagentCoJpV1beta1 = "ihpa.ake.cyberagent.co.jp/v1beta1"
+	const ihpaAkeCyberagentCoJpV1 = "ihpa.ake.cyberagent.co.jp/v1"
+	const defaultValue = "default"
+	const cm1Value = "cm1"
 	tests := []struct {
 		owner     *ihpav1beta1.IntelligentHorizontalPodAutoscaler
 		dependent metav1.Object
@@ -381,19 +402,19 @@ func TestAddOwnerReference(t *testing.T) {
 			owner: &ihpav1beta1.IntelligentHorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ihpa1",
-					Namespace: "default",
-					UID:       "xxx",
+					Namespace: defaultValue,
+					UID:       xxxValue,
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "IntelligentHorizontalPodAutoscaler",
-					APIVersion: "ihpa.ake.cyberagent.co.jp/v1beta1",
+					APIVersion: ihpaAkeCyberagentCoJpV1beta1,
 				},
 			},
 			dependent: metav1.Object(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cm1",
-					Namespace: "default",
-					UID:       "xxx",
+					Name:      cm1Value,
+					Namespace: defaultValue,
+					UID:       xxxValue,
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "ConfigMap",
@@ -402,17 +423,17 @@ func TestAddOwnerReference(t *testing.T) {
 			}),
 			expected: metav1.Object(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cm1",
-					Namespace: "default",
-					UID:       "xxx",
+					Name:      cm1Value,
+					Namespace: defaultValue,
+					UID:       xxxValue,
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
+							APIVersion:         ihpaAkeCyberagentCoJpV1beta1,
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
 							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
 							Name:               "ihpa1",
-							UID:                "xxx",
+							UID:                xxxValue,
 						},
 					},
 				},
@@ -426,18 +447,18 @@ func TestAddOwnerReference(t *testing.T) {
 			owner: &ihpav1beta1.IntelligentHorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ihpa2",
-					Namespace: "web",
+					Namespace: webValue,
 					UID:       "mmm",
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "IntelligentHorizontalPodAutoscaler",
-					APIVersion: "ihpa.ake.cyberagent.co.jp/v1",
+					APIVersion: ihpaAkeCyberagentCoJpV1,
 				},
 			},
 			dependent: metav1.Object(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "hpa",
-					Namespace: "web",
+					Namespace: webValue,
 					UID:       "nnn",
 				},
 				TypeMeta: metav1.TypeMeta{
@@ -448,11 +469,11 @@ func TestAddOwnerReference(t *testing.T) {
 			expected: metav1.Object(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "hpa",
-					Namespace: "web",
+					Namespace: webValue,
 					UID:       "nnn",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
+							APIVersion:         ihpaAkeCyberagentCoJpV1,
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
 							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",

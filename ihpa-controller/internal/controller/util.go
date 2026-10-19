@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"time"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
@@ -124,6 +123,5 @@ func randomMinuteCronFormat(hour int) string {
 		hour = 0
 	}
 	hour %= 24
-	rand.Seed(time.Now().UnixNano())
 	return fmt.Sprintf("%d %d * * *", rand.Intn(60), hour)
 }

@@ -166,7 +166,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	// because this metric refer to metric server and
 	// we need whole value of this metric for calculation of utilization.
 	// Utilization is used by cpu, memory, storage and ephemeral-storage.
-	if metric.Type == "Resource" && metricTarget.Type == "Utilization" {
+	if metric.Type == autoscalingv2.ResourceMetricSourceType && metricTarget.Type == "Utilization" {
 		var avg int64
 
 		mp := mpconfig.ConvertMetricProvider(g.ihpa.Spec.MetricProvider.DeepCopy()).ActiveProvider()
@@ -209,7 +209,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 		}
 		// clear utilization field
 		metricTarget.AverageUtilization = nil
-	} else if metric.Type == "External" || metric.Type == "Object" || metric.Type == "Pods" {
+	} else if metric.Type == autoscalingv2.ExternalMetricSourceType || metric.Type == autoscalingv2.ObjectMetricSourceType || metric.Type == autoscalingv2.PodsMetricSourceType {
 		switch metricTarget.Type {
 		case "AverageValue":
 			avgValue = metricTarget.AverageValue.DeepCopy()
@@ -231,7 +231,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	}
 
 	forecastedMetric := &autoscalingv2.MetricSpec{
-		Type:     "External",
+		Type:     autoscalingv2.ExternalMetricSourceType,
 		External: externalSource,
 	}
 
@@ -298,7 +298,7 @@ func (g *ihpaGeneratorImpl) fittingJobResource(metric *ihpav1beta2.ExtendedMetri
 func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricIdentifier, error) {
 	metricIdentifier := &autoscalingv2.MetricIdentifier{}
 	switch metric.Type {
-	case "Resource":
+	case autoscalingv2.ResourceMetricSourceType:
 		mp := mpconfig.ConvertMetricProvider(g.ihpa.Spec.MetricProvider.DeepCopy()).ActiveProvider()
 		mi := mp.ConvertResourceMetricName(metric.Resource.Name.String(), false)
 		if mi == nil {
@@ -308,11 +308,11 @@ func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2.
 
 		metricIdentifier.Name = mi.GetName()
 		metricIdentifier.Selector = &metav1.LabelSelector{MatchLabels: filters}
-	case "External":
+	case autoscalingv2.ExternalMetricSourceType:
 		metricIdentifier = metric.External.Metric.DeepCopy()
-	case "Object":
+	case autoscalingv2.ObjectMetricSourceType:
 		metricIdentifier = metric.Object.Metric.DeepCopy()
-	case "Pods":
+	case autoscalingv2.PodsMetricSourceType:
 		metricIdentifier = metric.Pods.Metric.DeepCopy()
 	default:
 		return nil, fmt.Errorf("%s metric is not supported yet", metric.Type)
@@ -360,7 +360,7 @@ func (g *ihpaGeneratorImpl) estimatorResource(metric *ihpav1beta2.ExtendedMetric
 	// search base tags
 	var baseMetricTags []string
 	for _, metric := range g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.Metrics {
-		if metric.Type != "External" {
+		if metric.Type != autoscalingv2.ExternalMetricSourceType {
 			continue
 		}
 		name, _ := extractScopedMetricInfo(metric.MetricSpec())

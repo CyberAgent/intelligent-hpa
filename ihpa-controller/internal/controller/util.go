@@ -40,16 +40,16 @@ func extractScopedMetricInfo(metric *autoscalingv2.MetricSpec) (string, *autosca
 	var name string
 	var target *autoscalingv2.MetricTarget
 	switch metric.Type {
-	case "Resource":
+	case autoscalingv2.ResourceMetricSourceType:
 		name = metric.Resource.Name.String()
 		target = metric.Resource.Target.DeepCopy()
-	case "Object":
+	case autoscalingv2.ObjectMetricSourceType:
 		name = metric.Object.Metric.Name
 		target = metric.Object.Target.DeepCopy()
-	case "Pods":
+	case autoscalingv2.PodsMetricSourceType:
 		name = metric.Pods.Metric.Name
 		target = metric.Pods.Target.DeepCopy()
-	case "External":
+	case autoscalingv2.ExternalMetricSourceType:
 		name = metric.External.Metric.Name
 		target = metric.External.Target.DeepCopy()
 	default:

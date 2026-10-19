@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strings"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
@@ -355,7 +355,7 @@ func (g *ihpaGeneratorImpl) estimatorResource(metric *ihpav1beta2.ExtendedMetric
 	for k, v := range tagMap {
 		tags = append(tags, k+":"+v)
 	}
-	sort.Strings(tags)
+	slices.Sort(tags)
 
 	// search base tags
 	var baseMetricTags []string
@@ -370,7 +370,7 @@ func (g *ihpaGeneratorImpl) estimatorResource(metric *ihpav1beta2.ExtendedMetric
 			for k, v := range m {
 				baseMetricTags = append(baseMetricTags, k+":"+v)
 			}
-			sort.Strings(baseMetricTags)
+			slices.Sort(baseMetricTags)
 			break
 		}
 	}

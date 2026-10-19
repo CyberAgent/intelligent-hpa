@@ -2,11 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"math"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -443,12 +444,11 @@ func readEstimateDataAsCSV(r io.Reader) ([]EstimateDatum, error) {
 
 // joinEstimateData join newEds and range of oldEds which older than newEds.
 func joinEstimateData(newEds, oldEds []EstimateDatum) []EstimateDatum {
-	sort.Slice(newEds, func(i, j int) bool {
-		return newEds[i].EstimateUnixTime < newEds[j].EstimateUnixTime
-	})
-	sort.Slice(oldEds, func(i, j int) bool {
-		return oldEds[i].EstimateUnixTime < oldEds[j].EstimateUnixTime
-	})
+	compareByEstimateUnixTime := func(a, b EstimateDatum) int {
+		return cmp.Compare(a.EstimateUnixTime, b.EstimateUnixTime)
+	}
+	slices.SortFunc(newEds, compareByEstimateUnixTime)
+	slices.SortFunc(oldEds, compareByEstimateUnixTime)
 
 	if len(newEds) == 0 {
 		return oldEds

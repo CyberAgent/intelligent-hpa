@@ -2,12 +2,13 @@ package datadog
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider"
@@ -320,8 +321,8 @@ func mergeAllSeriesDatapointToOne(j any) []datapoint {
 		return nil
 	}
 
-	sort.Slice(dps, func(i, j int) bool {
-		return dps[i].unixtime < dps[j].unixtime
+	slices.SortFunc(dps, func(a, b datapoint) int {
+		return cmp.Compare(a.unixtime, b.unixtime)
 	})
 
 	mergedDps := make([]datapoint, 300)

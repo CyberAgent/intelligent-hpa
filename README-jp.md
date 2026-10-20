@@ -14,33 +14,34 @@ Intelligent HPA は HPA の参照しているワークロードのメトリク�
 
 ### Datadog
 
-Datadog Agent と Datadog Cluster Agent をインストールします。すでにインストールしている人はこの手順を飛ばしてください。
-
-```
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
-
-KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
-
-helm install datadog stable/datadog \
-  --set datadog.apiKey=xxx \
-  --set datadog.appKey=yyy \
-  --set clusterAgent.enabled=true \
-  --set clusterAgent.metricsProvider.enabled=true \
-  --set datadog.tags={"kube_system_uid:${KUBE_SYSTEM_UID}"}
-```
-
-すでにインストールしている場合はクラスタの一意識別性のために `kube-system` Namespace の UID をタグに追加してください。これは `cpu`, `memory` といった Resource 系のメトリクスに一意性を与えるために必要になります (External 系を使用する場合はユーザーがタグを付与するので不要ですがつけておいた方が無難です)。タグを追加すると Datadog Agent が再起動します。
+Datadog Agent と Datadog Cluster Agent をインストールします。詳細は [Datadog 公式 Helm チャートのドキュメント](https://docs.datadoghq.com/ja/containers/kubernetes/installation/?tab=helm) を参照してください。すでに Datadog がインストールされている場合は、この後の upgrade 手順を実行してください。
 
 ```sh
-TMP_DD_TAGS=$(kubectl get ds <your_datadog_agent> -o jsonpath='{.spec.template.spec.containers[*].env[?(@.name == "DD_TAGS")].value}')
 KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
 
-TMP_DD_TAGS="${TMP_DD_TAGS} kube_system_uid:${KUBE_SYSTEM_UID}"
-
-kubectl patch ds <your_datadog_agent> -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"agent\",\"env\":[{\"name\":\"DD_TAGS\",\"value\":\"${TMP_DD_TAGS}\"}]}]}}}}"
-
-# if error occurred, please change containers[0].name replace to "datadog"
+helm install datadog datadog/datadog \
+  --set datadog.apiKey=xxx \
+  --set datadog.appKey=yyy \
+  --set clusterAgent.metricsProvider.enabled=true \
+  --set datadog.checksCardinality=orchestrator \
+  --set-string "datadog.tags[0]=kube_system_uid:${KUBE_SYSTEM_UID}"
 ```
+
+IHPA では外部メトリクスプロバイダー、API キー、メトリクス読み取り権限を持つ APP キーが必要です。Agent の認証情報とは別に、[Usage](#usage) に従って IHPA の `metricProvider` にも Datadog 認証情報を設定してください。
+
+すでに Datadog がインストールされている場合は以下の upgrade コマンドを使ってください。 `--reuse-values` が現在の credentials を保持し、追加の設定を反映します。
+
+```sh
+KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
+
+helm upgrade datadog datadog/datadog \
+  --reuse-values \
+  --set clusterAgent.metricsProvider.enabled=true \
+  --set datadog.checksCardinality=orchestrator \
+  --set-string "datadog.tags[0]=kube_system_uid:${KUBE_SYSTEM_UID}"
+```
+
+`datadog.tags` の既存タグは追加の `tags[n]` に含めてください。設定だけを変更する場合は、現在の chart version を `--version` に指定します。設定変更により Agent は再起動する場合があります。Helm 管理でない Agent は、管理元の設定に同等の値を反映するか、対応する patch を適用してください。
 
 ### Prometheus
 

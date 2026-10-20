@@ -31,3 +31,6 @@ jobs:
         run: |
           go mod tidy
           make test
+
+      - name: Check for uncommitted changes
+        run: git diff --exit-code

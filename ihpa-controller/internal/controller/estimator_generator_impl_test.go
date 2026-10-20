@@ -19,21 +19,17 @@ func newTestScheme() *runtime.Scheme {
 }
 
 func testEstimatorGeneratorSample(t *testing.T) *estimatorGeneratorImpl {
-	const testValue = "test"
-	const ihpaSample1CpuValue = "ihpa-sample1-cpu"
-	const defaultValue2 = "default"
-	const adjustValue = "adjust"
 	t.Helper()
 	sample1 := &estimatorGeneratorImpl{
 		est: &ihpav1beta2.Estimator{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      ihpaSample1CpuValue,
-				Namespace: defaultValue2,
+				Name:      "ihpa-sample1-cpu",
+				Namespace: "default",
 			},
 			Spec: ihpav1beta2.EstimatorSpec{
-				Mode:           adjustValue,
+				Mode:           "adjust",
 				GapMinutes:     10,
-				MetricName:     testValue,
+				MetricName:     "test",
 				MetricTags:     []string{"a", "b"},
 				BaseMetricName: "base",
 				BaseMetricTags: []string{"c", "d"},
@@ -47,7 +43,7 @@ func testEstimatorGeneratorSample(t *testing.T) *estimatorGeneratorImpl {
 					},
 				},
 				DataConfigMap: corev1.LocalObjectReference{
-					Name: ihpaSample1CpuValue,
+					Name: "ihpa-sample1-cpu",
 				},
 			},
 		},
@@ -57,8 +53,6 @@ func testEstimatorGeneratorSample(t *testing.T) *estimatorGeneratorImpl {
 }
 
 func TestEstimatorConfigMapResource(t *testing.T) {
-	const ihpaSample1Cpu = "ihpa-sample1-cpu"
-	const defaultValue = "default"
 	sample := testEstimatorGeneratorSample(t)
 
 	got, err := sample.ConfigMapResource()
@@ -66,10 +60,10 @@ func TestEstimatorConfigMapResource(t *testing.T) {
 		t.Fatalf("ConfigMapResource() returned error: %v", err)
 	}
 
-	if got.Name != ihpaSample1Cpu {
+	if got.Name != "ihpa-sample1-cpu" {
 		t.Errorf("configmap name mismatch: got=%s, exp=ihpa-sample1-cpu", got.Name)
 	}
-	if got.Namespace != defaultValue {
+	if got.Namespace != "default" {
 		t.Errorf("configmap namespace mismatch: got=%s, exp=default", got.Namespace)
 	}
 
@@ -78,7 +72,7 @@ func TestEstimatorConfigMapResource(t *testing.T) {
 		t.Fatalf("expected 1 owner reference, got %d", len(got.OwnerReferences))
 	}
 	ownerRef := got.OwnerReferences[0]
-	if ownerRef.Name != ihpaSample1Cpu {
+	if ownerRef.Name != "ihpa-sample1-cpu" {
 		t.Errorf("owner reference name mismatch: got=%s, exp=ihpa-sample1-cpu", ownerRef.Name)
 	}
 	if ownerRef.Kind != "Estimator" {
@@ -90,10 +84,9 @@ func TestEstimatorConfigMapResource(t *testing.T) {
 }
 
 func TestEstimatorGeneratorWithDifferentNamespace(t *testing.T) {
-	const ihpaTestMemory = "ihpa-test-memory"
 	est := &ihpav1beta2.Estimator{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ihpaTestMemory,
+			Name:      "ihpa-test-memory",
 			Namespace: "production",
 		},
 		Spec: ihpav1beta2.EstimatorSpec{
@@ -113,7 +106,7 @@ func TestEstimatorGeneratorWithDifferentNamespace(t *testing.T) {
 				},
 			},
 			DataConfigMap: corev1.LocalObjectReference{
-				Name: ihpaTestMemory,
+				Name: "ihpa-test-memory",
 			},
 		},
 	}
@@ -126,13 +119,13 @@ func TestEstimatorGeneratorWithDifferentNamespace(t *testing.T) {
 
 	expected := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ihpaTestMemory,
+			Name:      "ihpa-test-memory",
 			Namespace: "production",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         "",
 					Kind:               "Estimator",
-					Name:               ihpaTestMemory,
+					Name:               "ihpa-test-memory",
 					Controller:         func(b bool) *bool { return &b }(true),
 					BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
 				},

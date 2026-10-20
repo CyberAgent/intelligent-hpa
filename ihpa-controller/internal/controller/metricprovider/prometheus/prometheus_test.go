@@ -9,8 +9,6 @@ import (
 )
 
 func TestPrometheusSend(t *testing.T) {
-	const tag1Value1 = "tag1:value1"
-	const ihpaTestMetricValue = "ihpa.test.metric"
 	var receivedBody string
 	var receivedPath string
 
@@ -28,7 +26,7 @@ func TestPrometheusSend(t *testing.T) {
 		PushgatewayURL: server.URL,
 	}
 
-	err := p.Send(ihpaTestMetricValue, 1609459200, 42.5, []string{tag1Value1, "tag2:value2"}, nil)
+	err := p.Send("ihpa.test.metric", 1609459200, 42.5, []string{"tag1:value1", "tag2:value2"}, nil)
 	if err != nil {
 		t.Fatalf("Send failed: %v", err)
 	}
@@ -72,9 +70,6 @@ func TestPrometheusSendError(t *testing.T) {
 }
 
 func TestPrometheusFetch(t *testing.T) {
-	const vectorValue = "vector"
-	const successValue2 = "success"
-	const containerCpuUsageSecondsTotalValue3 = "container_cpu_usage_seconds_total"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/query" {
 			t.Fatalf("unexpected path: got=%s, exp=/api/v1/query", r.URL.Path)
@@ -92,9 +87,9 @@ func TestPrometheusFetch(t *testing.T) {
 		}
 
 		resp := queryResponse{
-			Status: successValue2,
+			Status: "success",
 			Data: queryData{
-				ResultType: vectorValue,
+				ResultType: "vector",
 				Result: []queryResult{
 					{
 						Metric: map[string]string{"host": "server1"},
@@ -115,7 +110,7 @@ func TestPrometheusFetch(t *testing.T) {
 		URL: server.URL,
 	}
 
-	val, err := p.Fetch(containerCpuUsageSecondsTotalValue3, 1609459200, []string{"host:server1"}, nil)
+	val, err := p.Fetch("container_cpu_usage_seconds_total", 1609459200, []string{"host:server1"}, nil)
 	if err != nil {
 		t.Fatalf("Fetch failed: %v", err)
 	}
@@ -127,7 +122,6 @@ func TestPrometheusFetch(t *testing.T) {
 }
 
 func TestPrometheusFetchWithAggregator(t *testing.T) {
-	const successValue = "success"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("query")
 		// Labels must be applied to the inner metric, not outside the aggregator.
@@ -137,7 +131,7 @@ func TestPrometheusFetchWithAggregator(t *testing.T) {
 		}
 
 		resp := queryResponse{
-			Status: successValue,
+			Status: "success",
 			Data: queryData{
 				ResultType: "vector",
 				Result: []queryResult{
@@ -169,8 +163,6 @@ func TestPrometheusFetchWithAggregator(t *testing.T) {
 }
 
 func TestBuildPromQL(t *testing.T) {
-	const namespaceIhpaTest = "namespace:ihpa-test"
-	const containerCpuUsageSecondsTotalValue2 = "container_cpu_usage_seconds_total"
 	tests := []struct {
 		name       string
 		metricName string
@@ -179,38 +171,38 @@ func TestBuildPromQL(t *testing.T) {
 	}{
 		{
 			name:       "plain metric with tags",
-			metricName: containerCpuUsageSecondsTotalValue2,
-			tags:       []string{namespaceIhpaTest},
+			metricName: "container_cpu_usage_seconds_total",
+			tags:       []string{"namespace:ihpa-test"},
 			expected:   `container_cpu_usage_seconds_total{namespace="ihpa-test"}`,
 		},
 		{
 			name:       "aggregator with tags",
 			metricName: "sum(container_cpu_usage_seconds_total)",
-			tags:       []string{namespaceIhpaTest},
+			tags:       []string{"namespace:ihpa-test"},
 			expected:   `sum(container_cpu_usage_seconds_total{namespace="ihpa-test"})`,
 		},
 		{
 			name:       "range vector with tags",
 			metricName: "rate(container_cpu_usage_seconds_total[5m])",
-			tags:       []string{namespaceIhpaTest},
+			tags:       []string{"namespace:ihpa-test"},
 			expected:   `rate(container_cpu_usage_seconds_total{namespace="ihpa-test"}[5m])`,
 		},
 		{
 			name:       "nested aggregator with range vector",
 			metricName: "sum(rate(container_cpu_usage_seconds_total[5m]))",
-			tags:       []string{namespaceIhpaTest},
+			tags:       []string{"namespace:ihpa-test"},
 			expected:   `sum(rate(container_cpu_usage_seconds_total{namespace="ihpa-test"}[5m]))`,
 		},
 		{
 			name:       "no tags returns metric as-is",
-			metricName: containerCpuUsageSecondsTotalValue2,
+			metricName: "container_cpu_usage_seconds_total",
 			tags:       nil,
-			expected:   containerCpuUsageSecondsTotalValue2,
+			expected:   "container_cpu_usage_seconds_total",
 		},
 		{
 			name:       "multiple tags",
 			metricName: "sum(container_memory_working_set_bytes)",
-			tags:       []string{namespaceIhpaTest, "pod:nginx-abc"},
+			tags:       []string{"namespace:ihpa-test", "pod:nginx-abc"},
 			expected:   `sum(container_memory_working_set_bytes{namespace="ihpa-test",pod="nginx-abc"})`,
 		},
 	}
@@ -279,7 +271,6 @@ func TestPrometheusFetchError(t *testing.T) {
 }
 
 func TestPrometheusConvertResourceMetricName(t *testing.T) {
-	const containerCpuUsageSecondsTotalValue = "container_cpu_usage_seconds_total"
 	p := &Prometheus{}
 
 	tests := []struct {
@@ -290,7 +281,7 @@ func TestPrometheusConvertResourceMetricName(t *testing.T) {
 		{
 			metricName: "cpu",
 			reverse:    false,
-			expected:   &metricIdentifier{name: containerCpuUsageSecondsTotalValue, scale: -9},
+			expected:   &metricIdentifier{name: "container_cpu_usage_seconds_total", scale: -9},
 		},
 		{
 			metricName: "memory",
@@ -303,7 +294,7 @@ func TestPrometheusConvertResourceMetricName(t *testing.T) {
 			expected:   nil,
 		},
 		{
-			metricName: containerCpuUsageSecondsTotalValue,
+			metricName: "container_cpu_usage_seconds_total",
 			reverse:    true,
 			expected:   &metricIdentifier{name: "cpu", scale: -9},
 		},
@@ -336,9 +327,6 @@ func TestPrometheusConvertResourceMetricName(t *testing.T) {
 }
 
 func TestPrometheusAddAggregator(t *testing.T) {
-	const sumContainerCpuUsageSecondsTotal = "sum(container_cpu_usage_seconds_total)"
-	const ihpaTestMetric = "ihpa.test.metric"
-	const containerCpuUsageSecondsTotal = "container_cpu_usage_seconds_total"
 	tests := []struct {
 		name        string
 		aggregation string
@@ -347,42 +335,42 @@ func TestPrometheusAddAggregator(t *testing.T) {
 	}{
 		{
 			name:       "default sum",
-			metricName: containerCpuUsageSecondsTotal,
-			expected:   sumContainerCpuUsageSecondsTotal,
+			metricName: "container_cpu_usage_seconds_total",
+			expected:   "sum(container_cpu_usage_seconds_total)",
 		},
 		{
 			name:       "default sum for arbitrary metric",
-			metricName: ihpaTestMetric,
+			metricName: "ihpa.test.metric",
 			expected:   "sum(ihpa.test.metric)",
 		},
 		{
 			name:        "explicit sum",
 			aggregation: "sum",
-			metricName:  containerCpuUsageSecondsTotal,
-			expected:    sumContainerCpuUsageSecondsTotal,
+			metricName:  "container_cpu_usage_seconds_total",
+			expected:    "sum(container_cpu_usage_seconds_total)",
 		},
 		{
 			name:        "min aggregation",
 			aggregation: "min",
-			metricName:  containerCpuUsageSecondsTotal,
+			metricName:  "container_cpu_usage_seconds_total",
 			expected:    "min(container_cpu_usage_seconds_total)",
 		},
 		{
 			name:        "max aggregation",
 			aggregation: "max",
-			metricName:  ihpaTestMetric,
+			metricName:  "ihpa.test.metric",
 			expected:    "max(ihpa.test.metric)",
 		},
 		{
 			name:        "count aggregation",
 			aggregation: "count",
-			metricName:  ihpaTestMetric,
+			metricName:  "ihpa.test.metric",
 			expected:    "count(ihpa.test.metric)",
 		},
 		{
 			name:        "avg aggregation",
 			aggregation: "avg",
-			metricName:  ihpaTestMetric,
+			metricName:  "ihpa.test.metric",
 			expected:    "avg(ihpa.test.metric)",
 		},
 	}

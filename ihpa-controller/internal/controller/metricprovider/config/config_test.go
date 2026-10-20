@@ -10,10 +10,6 @@ import (
 )
 
 func TestConvertMetricProvider(t *testing.T) {
-	const yyyValue = "yyy"
-	const xxxValue = "xxx"
-	const httpPushgateway9091 = "http://pushgateway:9091"
-	const httpPrometheus9090 = "http://prometheus:9090"
 	tests := []struct {
 		name     string
 		input    *ihpav1beta2.MetricProvider
@@ -24,11 +20,11 @@ func TestConvertMetricProvider(t *testing.T) {
 			input: &ihpav1beta2.MetricProvider{
 				Name: "datadog",
 				ProviderSource: ihpav1beta2.ProviderSource{
-					Datadog: &ihpav1beta2.DatadogProviderSource{APIKey: xxxValue, APPKey: yyyValue},
+					Datadog: &ihpav1beta2.DatadogProviderSource{APIKey: "xxx", APPKey: "yyy"},
 				},
 			},
 			expected: &MetricProviderConfig{
-				Datadog: &datadogmp.Datadog{APIKey: xxxValue, APPKey: yyyValue},
+				Datadog: &datadogmp.Datadog{APIKey: "xxx", APPKey: "yyy"},
 			},
 		},
 		{
@@ -37,11 +33,11 @@ func TestConvertMetricProvider(t *testing.T) {
 				Name:        "datadog",
 				Aggregation: "avg",
 				ProviderSource: ihpav1beta2.ProviderSource{
-					Datadog: &ihpav1beta2.DatadogProviderSource{APIKey: xxxValue, APPKey: yyyValue},
+					Datadog: &ihpav1beta2.DatadogProviderSource{APIKey: "xxx", APPKey: "yyy"},
 				},
 			},
 			expected: &MetricProviderConfig{
-				Datadog: &datadogmp.Datadog{APIKey: xxxValue, APPKey: yyyValue, Aggregation: "avg"},
+				Datadog: &datadogmp.Datadog{APIKey: "xxx", APPKey: "yyy", Aggregation: "avg"},
 			},
 		},
 		{
@@ -50,15 +46,15 @@ func TestConvertMetricProvider(t *testing.T) {
 				Name: "prometheus",
 				ProviderSource: ihpav1beta2.ProviderSource{
 					Prometheus: &ihpav1beta2.PrometheusProviderSource{
-						URL:            httpPrometheus9090,
-						PushgatewayURL: httpPushgateway9091,
+						URL:            "http://prometheus:9090",
+						PushgatewayURL: "http://pushgateway:9091",
 					},
 				},
 			},
 			expected: &MetricProviderConfig{
 				Prometheus: &prometheusmp.Prometheus{
-					URL:            httpPrometheus9090,
-					PushgatewayURL: httpPushgateway9091,
+					URL:            "http://prometheus:9090",
+					PushgatewayURL: "http://pushgateway:9091",
 				},
 			},
 		},
@@ -69,15 +65,15 @@ func TestConvertMetricProvider(t *testing.T) {
 				Aggregation: "max",
 				ProviderSource: ihpav1beta2.ProviderSource{
 					Prometheus: &ihpav1beta2.PrometheusProviderSource{
-						URL:            httpPrometheus9090,
-						PushgatewayURL: httpPushgateway9091,
+						URL:            "http://prometheus:9090",
+						PushgatewayURL: "http://pushgateway:9091",
 					},
 				},
 			},
 			expected: &MetricProviderConfig{
 				Prometheus: &prometheusmp.Prometheus{
-					URL:            httpPrometheus9090,
-					PushgatewayURL: httpPushgateway9091,
+					URL:            "http://prometheus:9090",
+					PushgatewayURL: "http://pushgateway:9091",
 					Aggregation:    "max",
 				},
 			},

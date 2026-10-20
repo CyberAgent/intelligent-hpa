@@ -17,69 +17,38 @@ import (
 )
 
 func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorImpl) {
-	const trueValue = "true"
-	const yyyValue3 = "yyy"
-	const xxxValue3 = "xxx"
-	const webDbValue2 = "web-db"
-	const webValue6 = "web"
-	const secret1Value2 = "secret1"
-	const sample1Value4 = "sample1"
-	const sampleProviderValue2 = "sample-provider"
-	const sampleValue = "sample"
-	const nginxNetRequestPerSValue5 = "nginx.net.request_per_s"
-	const nginxValue4 = "nginx"
-	const memoryValue = "memory"
-	const kubeStatefulsetValue3 = "kube_statefulset"
-	const kubeNamespaceValue4 = "kube_namespace"
-	const kubeApp = "kube_app"
-	const ihpaAkeCyberagentCoJpV1beta1Value3 = "ihpa.ake.cyberagent.co.jp/v1beta1"
-	const ihpaAkeCyberagentCoJpV1Value3 = "ihpa.ake.cyberagent.co.jp/v1"
-	const defaultValue8 = "default"
-	const cpuValue5 = "cpu"
-	const appsV1 = "apps/v1"
-	const adjustValue = "adjust"
-	const utilizationValue4 = "Utilization"
-	const statefulSetValue = "StatefulSet"
-	const resourceValue5 = "Resource"
-	const intelligentHorizontalPodAutoscaler = "IntelligentHorizontalPodAutoscaler"
-	const externalValue4 = "External"
-	const deploymentValue = "Deployment"
-	const averageValueValue5 = "AverageValue"
-	const id9fc642f3Bb9d404dAfd5D04f1d6149adValue4 = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
-	const id9833e04fA68947f9B58836a616432abdValue2 = "9833e04f-a689-47f9-b588-36a616432abd"
-	const id46f9e396D3c44103A80749054f47bbfbValue3 = "46f9e396-d3c4-4103-a807-49054f47bbfb"
 	t.Helper()
 	sample1 := &ihpaGeneratorImpl{
-		kubeSystemUID: id46f9e396D3c44103A80749054f47bbfbValue3,
+		kubeSystemUID: "46f9e396-d3c4-4103-a807-49054f47bbfb",
 		scaleTargetRequests: corev1.ResourceList{
 			corev1.ResourceCPU: *resource.NewScaledQuantity(500, resource.Milli),
 		},
 		ihpa: &ihpav1beta2.IntelligentHorizontalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      sample1Value4,
-				Namespace: defaultValue8,
-				UID:       id9fc642f3Bb9d404dAfd5D04f1d6149adValue4,
+				Name:      "sample1",
+				Namespace: "default",
+				UID:       "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 			},
 			TypeMeta: metav1.TypeMeta{
-				Kind:       intelligentHorizontalPodAutoscaler,
-				APIVersion: ihpaAkeCyberagentCoJpV1beta1Value3,
+				Kind:       "IntelligentHorizontalPodAutoscaler",
+				APIVersion: "ihpa.ake.cyberagent.co.jp/v1beta1",
 			},
 			Spec: ihpav1beta2.IntelligentHorizontalPodAutoscalerSpec{
 				HorizontalPodAutoscalerTemplate: ihpav1beta2.ExtendedHorizontalPodAutoscalerTemplateSpec{
 					Spec: ihpav1beta2.ExtendedHorizontalPodAutoscalerSpec{
 						ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
-							APIVersion: appsV1,
-							Kind:       deploymentValue,
-							Name:       nginxValue4,
+							APIVersion: "apps/v1",
+							Kind:       "Deployment",
+							Name:       "nginx",
 						},
 						MinReplicas: func(i int32) *int32 { return &i }(3),
 						Metrics: []ihpav1beta2.ExtendedMetricSpec{
 							{
-								Type: resourceValue5,
+								Type: "Resource",
 								Resource: &autoscalingv2.ResourceMetricSource{
-									Name: cpuValue5,
+									Name: "cpu",
 									Target: autoscalingv2.MetricTarget{
-										Type:               utilizationValue4,
+										Type:               "Utilization",
 										AverageUtilization: func(i int32) *int32 { return &i }(50),
 									},
 								},
@@ -93,15 +62,15 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 					},
 				},
 				EstimatorPatchSpec: ihpav1beta2.EstimatorPatchSpec{
-					Mode:       adjustValue,
+					Mode:       "adjust",
 					GapMinutes: 5,
 				},
 				MetricProvider: ihpav1beta2.MetricProvider{
-					Name: sampleProviderValue2,
+					Name: "sample-provider",
 					ProviderSource: ihpav1beta2.ProviderSource{
 						Datadog: &ihpav1beta2.DatadogProviderSource{
-							APIKey: xxxValue3,
-							APPKey: yyyValue3,
+							APIKey: "xxx",
+							APPKey: "yyy",
 						},
 					},
 				},
@@ -109,7 +78,7 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 		},
 	}
 	sample2 := &ihpaGeneratorImpl{
-		kubeSystemUID: id9833e04fA68947f9B58836a616432abdValue2,
+		kubeSystemUID: "9833e04f-a689-47f9-b588-36a616432abd",
 		scaleTargetRequests: corev1.ResourceList{
 			corev1.ResourceCPU:     *resource.NewScaledQuantity(2, 0),
 			corev1.ResourceMemory:  *resource.NewScaledQuantity(500, resource.Mega),
@@ -118,30 +87,30 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 		ihpa: &ihpav1beta2.IntelligentHorizontalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "sample2",
-				Namespace: webValue6,
-				UID:       id9fc642f3Bb9d404dAfd5D04f1d6149adValue4,
+				Namespace: "web",
+				UID:       "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 			},
 			TypeMeta: metav1.TypeMeta{
-				Kind:       intelligentHorizontalPodAutoscaler,
-				APIVersion: ihpaAkeCyberagentCoJpV1Value3,
+				Kind:       "IntelligentHorizontalPodAutoscaler",
+				APIVersion: "ihpa.ake.cyberagent.co.jp/v1",
 			},
 			Spec: ihpav1beta2.IntelligentHorizontalPodAutoscalerSpec{
 				HorizontalPodAutoscalerTemplate: ihpav1beta2.ExtendedHorizontalPodAutoscalerTemplateSpec{
 					Spec: ihpav1beta2.ExtendedHorizontalPodAutoscalerSpec{
 						ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
-							APIVersion: appsV1,
-							Kind:       statefulSetValue,
-							Name:       webDbValue2,
+							APIVersion: "apps/v1",
+							Kind:       "StatefulSet",
+							Name:       "web-db",
 						},
 						MinReplicas: func(i int32) *int32 { return &i }(5),
 						MaxReplicas: 10,
 						Metrics: []ihpav1beta2.ExtendedMetricSpec{
 							{
-								Type: resourceValue5,
+								Type: "Resource",
 								Resource: &autoscalingv2.ResourceMetricSource{
-									Name: cpuValue5,
+									Name: "cpu",
 									Target: autoscalingv2.MetricTarget{
-										Type:               utilizationValue4,
+										Type:               "Utilization",
 										AverageUtilization: func(i int32) *int32 { return &i }(50),
 									},
 								},
@@ -160,7 +129,7 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 									CustomConfig: `this is custom config`,
 									JobPatchSpec: ihpav1beta2.JobPatchSpec{
 										ImagePullSecrets: []corev1.LocalObjectReference{
-											{Name: secret1Value2},
+											{Name: "secret1"},
 											{Name: "secret2"},
 										},
 										Image: "my_image:v1",
@@ -168,31 +137,31 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 								},
 							},
 							{
-								Type: resourceValue5,
+								Type: "Resource",
 								Resource: &autoscalingv2.ResourceMetricSource{
-									Name: memoryValue,
+									Name: "memory",
 									Target: autoscalingv2.MetricTarget{
-										Type:               utilizationValue4,
+										Type:               "Utilization",
 										AverageUtilization: func(i int32) *int32 { return &i }(80),
 									},
 								},
 								// omit FittingJobPatch
 							},
 							{
-								Type: externalValue4,
+								Type: "External",
 								External: &autoscalingv2.ExternalMetricSource{
 									Metric: autoscalingv2.MetricIdentifier{
-										Name: nginxNetRequestPerSValue5,
+										Name: "nginx.net.request_per_s",
 										Selector: &metav1.LabelSelector{
 											MatchLabels: map[string]string{
-												kubeStatefulsetValue3: webDbValue2,
-												kubeNamespaceValue4:   webValue6,
-												kubeApp:               sampleValue,
+												"kube_statefulset": "web-db",
+												"kube_namespace":   "web",
+												"kube_app":         "sample",
 											},
 										},
 									},
 									Target: autoscalingv2.MetricTarget{
-										Type:         averageValueValue5,
+										Type:         "AverageValue",
 										AverageValue: resource.NewQuantity(50, resource.DecimalSI),
 									},
 								},
@@ -206,7 +175,7 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 										BackoffLimit:          func(i int32) *int32 { return &i }(5),
 										Completions:           func(i int32) *int32 { return &i }(10),
 										// related to Pod
-										ImagePullSecrets: []corev1.LocalObjectReference{{Name: secret1Value2}},
+										ImagePullSecrets: []corev1.LocalObjectReference{{Name: "secret1"}},
 										Affinity: &corev1.Affinity{
 											PodAntiAffinity: &corev1.PodAntiAffinity{
 												PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
@@ -222,12 +191,12 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 												},
 											},
 										},
-										NodeSelector: map[string]string{"gpu": trueValue},
+										NodeSelector: map[string]string{"gpu": "true"},
 										Tolerations: []corev1.Toleration{
 											{
 												Key:      "master",
 												Operator: "Equal",
-												Value:    trueValue,
+												Value:    "true",
 												Effect:   "NoSchedule",
 											},
 										},
@@ -236,7 +205,7 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 											{
 												Name: "volume1",
 												VolumeSource: corev1.VolumeSource{
-													Secret: &corev1.SecretVolumeSource{SecretName: secret1Value2},
+													Secret: &corev1.SecretVolumeSource{SecretName: "secret1"},
 												},
 											},
 										},
@@ -274,11 +243,11 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 					GapMinutes: 10,
 				},
 				MetricProvider: ihpav1beta2.MetricProvider{
-					Name: sampleProviderValue2,
+					Name: "sample-provider",
 					ProviderSource: ihpav1beta2.ProviderSource{
 						Datadog: &ihpav1beta2.DatadogProviderSource{
-							APIKey: xxxValue3,
-							APPKey: yyyValue3,
+							APIKey: "xxx",
+							APPKey: "yyy",
 						},
 					},
 				},
@@ -289,32 +258,6 @@ func testIHPAGeneratorSample(t *testing.T) (*ihpaGeneratorImpl, *ihpaGeneratorIm
 }
 
 func TestHorizontalPodAutoscalerResource(t *testing.T) {
-	const webDbValue = "web-db"
-	const webValue5 = "web"
-	const sample1Value3 = "sample1"
-	const nginxNetRequestPerSValue4 = "nginx.net.request_per_s"
-	const nginxValue3 = "nginx"
-	const kubeSystemUidValue3 = "kube_system_uid"
-	const kubeStatefulsetValue2 = "kube_statefulset"
-	const kubeNamespaceValue3 = "kube_namespace"
-	const kubeDeploymentValue3 = "kube_deployment"
-	const ihpaAkeCyberagentCoJpV1beta1Value2 = "ihpa.ake.cyberagent.co.jp/v1beta1"
-	const ihpaSample2Value2 = "ihpa-sample2"
-	const ihpaSample1Value2 = "ihpa-sample1"
-	const defaultValue7 = "default"
-	const cpuValue4 = "cpu"
-	const akeIhpaForecastedNginxNetRequestPerS = "ake.ihpa.forecasted_nginx_net_request_per_s"
-	const akeIhpaForecastedKubernetesCpuUsageTotalValue = "ake.ihpa.forecasted_kubernetes_cpu_usage_total"
-	const utilizationValue3 = "Utilization"
-	const statefulSet = "StatefulSet"
-	const resourceValue4 = "Resource"
-	const intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue4 = "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp"
-	const externalValue3 = "External"
-	const deployment = "Deployment"
-	const averageValueValue4 = "AverageValue"
-	const id9fc642f3Bb9d404dAfd5D04f1d6149adValue3 = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
-	const id9833e04fA68947f9B58836a616432abdValue = "9833e04f-a689-47f9-b588-36a616432abd"
-	const id46f9e396D3c44103A80749054f47bbfbValue2 = "46f9e396-d3c4-4103-a807-49054f47bbfb"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		base     *ihpaGeneratorImpl
@@ -324,52 +267,52 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 			base: sample1,
 			expected: &autoscalingv2.HorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample1Value2,
-					Namespace: defaultValue7,
+					Name:      "ihpa-sample1",
+					Namespace: "default",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         ihpaAkeCyberagentCoJpV1beta1Value2,
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue4,
-							Name:               sample1Value3,
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue3,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
 				Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 					ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 						APIVersion: "apps/v1",
-						Kind:       deployment,
-						Name:       nginxValue3,
+						Kind:       "Deployment",
+						Name:       "nginx",
 					},
 					MinReplicas: func(i int32) *int32 { return &i }(3),
 					Metrics: []autoscalingv2.MetricSpec{
 						{
-							Type: resourceValue4,
+							Type: "Resource",
 							Resource: &autoscalingv2.ResourceMetricSource{
-								Name: cpuValue4,
+								Name: "cpu",
 								Target: autoscalingv2.MetricTarget{
-									Type:               utilizationValue3,
+									Type:               "Utilization",
 									AverageUtilization: func(i int32) *int32 { return &i }(50),
 								},
 							},
 						},
 						{
-							Type: externalValue3,
+							Type: "External",
 							External: &autoscalingv2.ExternalMetricSource{
 								Metric: autoscalingv2.MetricIdentifier{
-									Name: akeIhpaForecastedKubernetesCpuUsageTotalValue,
+									Name: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
-											kubeSystemUidValue3:  id46f9e396D3c44103A80749054f47bbfbValue2,
-											kubeDeploymentValue3: nginxValue3,
-											kubeNamespaceValue3:  defaultValue7,
+											"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+											"kube_deployment": "nginx",
+											"kube_namespace":  "default",
 										},
 									},
 								},
 								Target: autoscalingv2.MetricTarget{
-									Type:         averageValueValue4,
+									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(resource.NewQuantity(250, resource.DecimalSI).ScaledValue(resource.Micro), resource.DecimalSI), // 250M
 								},
 							},
@@ -382,121 +325,121 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 			base: sample2,
 			expected: &autoscalingv2.HorizontalPodAutoscaler{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample2Value2,
-					Namespace: webValue5,
+					Name:      "ihpa-sample2",
+					Namespace: "web",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue4,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
 							Name:               "sample2",
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue3,
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
 				Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 					ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 						APIVersion: "apps/v1",
-						Kind:       statefulSet,
-						Name:       webDbValue,
+						Kind:       "StatefulSet",
+						Name:       "web-db",
 					},
 					MinReplicas: func(i int32) *int32 { return &i }(5),
 					MaxReplicas: 10,
 					Metrics: []autoscalingv2.MetricSpec{
 						{
-							Type: resourceValue4,
+							Type: "Resource",
 							Resource: &autoscalingv2.ResourceMetricSource{
-								Name: cpuValue4,
+								Name: "cpu",
 								Target: autoscalingv2.MetricTarget{
-									Type:               utilizationValue3,
+									Type:               "Utilization",
 									AverageUtilization: func(i int32) *int32 { return &i }(50),
 								},
 							},
 						},
 						{
-							Type: resourceValue4,
+							Type: "Resource",
 							Resource: &autoscalingv2.ResourceMetricSource{
 								Name: "memory",
 								Target: autoscalingv2.MetricTarget{
-									Type:               utilizationValue3,
+									Type:               "Utilization",
 									AverageUtilization: func(i int32) *int32 { return &i }(80),
 								},
 							},
 						},
 						{
-							Type: externalValue3,
+							Type: "External",
 							External: &autoscalingv2.ExternalMetricSource{
 								Metric: autoscalingv2.MetricIdentifier{
-									Name: nginxNetRequestPerSValue4,
+									Name: "nginx.net.request_per_s",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
-											kubeStatefulsetValue2: webDbValue,
-											kubeNamespaceValue3:   webValue5,
-											"kube_app":            "sample",
+											"kube_statefulset": "web-db",
+											"kube_namespace":   "web",
+											"kube_app":         "sample",
 										},
 									},
 								},
 								Target: autoscalingv2.MetricTarget{
-									Type:         averageValueValue4,
+									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(50, resource.DecimalSI),
 								},
 							},
 						},
 						{
-							Type: externalValue3,
+							Type: "External",
 							External: &autoscalingv2.ExternalMetricSource{
 								Metric: autoscalingv2.MetricIdentifier{
-									Name: akeIhpaForecastedKubernetesCpuUsageTotalValue,
+									Name: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
-											kubeSystemUidValue3:   id9833e04fA68947f9B58836a616432abdValue,
-											kubeStatefulsetValue2: webDbValue,
-											kubeNamespaceValue3:   webValue5,
+											"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+											"kube_statefulset": "web-db",
+											"kube_namespace":   "web",
 										},
 									},
 								},
 								Target: autoscalingv2.MetricTarget{
-									Type:         averageValueValue4,
+									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(resource.NewQuantity(1000, resource.DecimalSI).ScaledValue(resource.Micro), resource.DecimalSI),
 									// 1000M (1,000,000,000) (resource.Micro = 10^6)
 								},
 							},
 						},
 						{
-							Type: externalValue3,
+							Type: "External",
 							External: &autoscalingv2.ExternalMetricSource{
 								Metric: autoscalingv2.MetricIdentifier{
 									Name: "ake.ihpa.forecasted_kubernetes_memory_usage",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
-											kubeSystemUidValue3:   id9833e04fA68947f9B58836a616432abdValue,
-											kubeStatefulsetValue2: webDbValue,
-											kubeNamespaceValue3:   webValue5,
+											"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+											"kube_statefulset": "web-db",
+											"kube_namespace":   "web",
 										},
 									},
 								},
 								Target: autoscalingv2.MetricTarget{
-									Type:         averageValueValue4,
+									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(resource.NewQuantity(400_000_000, resource.DecimalSI).Value(), resource.DecimalSI),
 								},
 							},
 						},
 						{
-							Type: externalValue3,
+							Type: "External",
 							External: &autoscalingv2.ExternalMetricSource{
 								Metric: autoscalingv2.MetricIdentifier{
-									Name: akeIhpaForecastedNginxNetRequestPerS,
+									Name: "ake.ihpa.forecasted_nginx_net_request_per_s",
 									Selector: &metav1.LabelSelector{
 										MatchLabels: map[string]string{
-											kubeSystemUidValue3:   id9833e04fA68947f9B58836a616432abdValue,
-											kubeStatefulsetValue2: webDbValue,
-											kubeNamespaceValue3:   webValue5,
+											"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+											"kube_statefulset": "web-db",
+											"kube_namespace":   "web",
 										},
 									},
 								},
 								Target: autoscalingv2.MetricTarget{
-									Type:         averageValueValue4,
+									Type:         "AverageValue",
 									AverageValue: resource.NewQuantity(50, resource.DecimalSI),
 								},
 							},
@@ -535,36 +478,6 @@ func TestHorizontalPodAutoscalerResource(t *testing.T) {
 }
 
 func TestFittingJobResources(t *testing.T) {
-	const ihpaAkeCyberagentCoJpFittingjobIdValue = "ihpa.ake.cyberagent.co.jp/fittingjob-id"
-	const yyyValue2 = "yyy"
-	const xxxValue2 = "xxx"
-	const webDb = "web-db"
-	const webValue4 = "web"
-	const secret1Value = "secret1"
-	const sample2Value4 = "sample2"
-	const sampleProviderValue = "sample-provider"
-	const nginxNetRequestPerSValue3 = "nginx.net.request_per_s"
-	const nginxValue2 = "nginx"
-	const kubernetesCpuUsageTotalValue = "kubernetes.cpu.usage.total"
-	const kubeSystemUidValue2 = "kube_system_uid"
-	const kubeStatefulsetValue = "kube_statefulset"
-	const kubeNamespaceValue2 = "kube_namespace"
-	const kubeDeploymentValue2 = "kube_deployment"
-	const ihpaAkeCyberagentCoJpV1beta1Value = "ihpa.ake.cyberagent.co.jp/v1beta1"
-	const ihpaAkeCyberagentCoJpV1Value2 = "ihpa.ake.cyberagent.co.jp/v1"
-	const ihpaSample2NginxNetRequestPerSValue = "ihpa-sample2-nginx-net-request-per-s"
-	const ihpaSample2MemoryValue = "ihpa-sample2-memory"
-	const ihpaSample2CpuValue = "ihpa-sample2-cpu"
-	const ihpaSample2Value = "ihpa-sample2"
-	const ihpaSample1CpuValue2 = "ihpa-sample1-cpu"
-	const ihpaSample1Value = "ihpa-sample1"
-	const defaultValue6 = "default"
-	const c5abea3be857f41dc43ed7dec2eee7e3Value = "c5abea3be857f41dc43ed7dec2eee7e3"
-	const b9aa658a6b30a452ee08d0fbea2c4f40Value = "b9aa658a6b30a452ee08d0fbea2c4f40"
-	const intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue3 = "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp"
-	const id9fc642f3Bb9d404dAfd5D04f1d6149adValue2 = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
-	const id9833e04fA68947f9B58836a616432abd = "9833e04f-a689-47f9-b588-36a616432abd"
-	const id46f9e396D3c44103A80749054f47bbfbValue = "46f9e396-d3c4-4103-a807-49054f47bbfb"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		base     *ihpaGeneratorImpl
@@ -575,45 +488,45 @@ func TestFittingJobResources(t *testing.T) {
 			expected: []ihpav1beta2.FittingJob{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample1CpuValue2,
-						Namespace: defaultValue6,
+						Name:      "ihpa-sample1-cpu",
+						Namespace: "default",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion:         ihpaAkeCyberagentCoJpV1beta1Value,
+								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue3,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
 								Name:               "sample1",
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue2,
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobIdValue: b9aa658a6b30a452ee08d0fbea2c4f40Value,
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "b9aa658a6b30a452ee08d0fbea2c4f40",
 						},
 					},
 					Spec: ihpav1beta2.FittingJobSpec{
 						Seasonality:   "weekly",
 						ExecuteOn:     4,
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample1CpuValue2},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample1-cpu"},
 						JobPatchSpec: ihpav1beta2.JobPatchSpec{
-							ServiceAccountName: ihpaSample1Value,
+							ServiceAccountName: "ihpa-sample1",
 						},
 						TargetMetric: autoscalingv2.MetricIdentifier{
-							Name: kubernetesCpuUsageTotalValue,
+							Name: "kubernetes.cpu.usage.total",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
-									kubeSystemUidValue2:  id46f9e396D3c44103A80749054f47bbfbValue,
-									kubeDeploymentValue2: nginxValue2,
-									kubeNamespaceValue2:  defaultValue6,
+									"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+									"kube_deployment": "nginx",
+									"kube_namespace":  "default",
 								},
 							},
 						},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProviderValue,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue2,
-									APPKey: yyyValue2,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -626,20 +539,20 @@ func TestFittingJobResources(t *testing.T) {
 			expected: []ihpav1beta2.FittingJob{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample2CpuValue,
-						Namespace: webValue4,
+						Name:      "ihpa-sample2-cpu",
+						Namespace: "web",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion:         ihpaAkeCyberagentCoJpV1Value2,
+								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue3,
-								Name:               sample2Value4,
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue2,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+								Name:               "sample2",
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobIdValue: "69f9447bad75992b533334827ce092ad",
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "69f9447bad75992b533334827ce092ad",
 						},
 					},
 					Spec: ihpav1beta2.FittingJobSpec{
@@ -655,31 +568,31 @@ func TestFittingJobResources(t *testing.T) {
 							Lag:                 288,
 						},
 						CustomConfig:  `this is custom config`,
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample2CpuValue},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample2-cpu"},
 						JobPatchSpec: ihpav1beta2.JobPatchSpec{
 							Image: "my_image:v1",
 							ImagePullSecrets: []corev1.LocalObjectReference{
-								{Name: secret1Value},
+								{Name: "secret1"},
 								{Name: "secret2"},
 							},
-							ServiceAccountName: ihpaSample2Value,
+							ServiceAccountName: "ihpa-sample2",
 						},
 						TargetMetric: autoscalingv2.MetricIdentifier{
-							Name: kubernetesCpuUsageTotalValue,
+							Name: "kubernetes.cpu.usage.total",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
-									kubeSystemUidValue2:  id9833e04fA68947f9B58836a616432abd,
-									kubeStatefulsetValue: webDb,
-									kubeNamespaceValue2:  webValue4,
+									"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+									"kube_statefulset": "web-db",
+									"kube_namespace":   "web",
 								},
 							},
 						},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProviderValue,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue2,
-									APPKey: yyyValue2,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -687,43 +600,43 @@ func TestFittingJobResources(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample2MemoryValue,
-						Namespace: webValue4,
+						Name:      "ihpa-sample2-memory",
+						Namespace: "web",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion:         ihpaAkeCyberagentCoJpV1Value2,
+								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue3,
-								Name:               sample2Value4,
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue2,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+								Name:               "sample2",
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobIdValue: c5abea3be857f41dc43ed7dec2eee7e3Value,
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "c5abea3be857f41dc43ed7dec2eee7e3",
 						},
 					},
 					Spec: ihpav1beta2.FittingJobSpec{
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample2MemoryValue},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample2-memory"},
 						JobPatchSpec: ihpav1beta2.JobPatchSpec{
-							ServiceAccountName: ihpaSample2Value,
+							ServiceAccountName: "ihpa-sample2",
 						},
 						TargetMetric: autoscalingv2.MetricIdentifier{
 							Name: "kubernetes.memory.usage",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
-									kubeSystemUidValue2:  id9833e04fA68947f9B58836a616432abd,
-									kubeStatefulsetValue: webDb,
-									kubeNamespaceValue2:  webValue4,
+									"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+									"kube_statefulset": "web-db",
+									"kube_namespace":   "web",
 								},
 							},
 						},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProviderValue,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue2,
-									APPKey: yyyValue2,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -731,33 +644,33 @@ func TestFittingJobResources(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample2NginxNetRequestPerSValue,
-						Namespace: webValue4,
+						Name:      "ihpa-sample2-nginx-net-request-per-s",
+						Namespace: "web",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion:         ihpaAkeCyberagentCoJpV1Value2,
+								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue3,
-								Name:               sample2Value4,
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue2,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+								Name:               "sample2",
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobIdValue: "e9932760a233dffd256e6e0de941096e",
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "e9932760a233dffd256e6e0de941096e",
 						},
 					},
 					Spec: ihpav1beta2.FittingJobSpec{
 						Seasonality:   "auto",
 						ExecuteOn:     2,
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample2NginxNetRequestPerSValue},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample2-nginx-net-request-per-s"},
 						JobPatchSpec: ihpav1beta2.JobPatchSpec{
 							// related to Job
 							ActiveDeadlineSeconds: func(i int64) *int64 { return &i }(300),
 							BackoffLimit:          func(i int32) *int32 { return &i }(5),
 							Completions:           func(i int32) *int32 { return &i }(10),
 							// related to Pod
-							ImagePullSecrets: []corev1.LocalObjectReference{{Name: secret1Value}},
+							ImagePullSecrets: []corev1.LocalObjectReference{{Name: "secret1"}},
 							Affinity: &corev1.Affinity{
 								PodAntiAffinity: &corev1.PodAntiAffinity{
 									PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
@@ -787,7 +700,7 @@ func TestFittingJobResources(t *testing.T) {
 								{
 									Name: "volume1",
 									VolumeSource: corev1.VolumeSource{
-										Secret: &corev1.SecretVolumeSource{SecretName: secret1Value},
+										Secret: &corev1.SecretVolumeSource{SecretName: "secret1"},
 									},
 								},
 							},
@@ -816,21 +729,21 @@ func TestFittingJobResources(t *testing.T) {
 							},
 						},
 						TargetMetric: autoscalingv2.MetricIdentifier{
-							Name: nginxNetRequestPerSValue3,
+							Name: "nginx.net.request_per_s",
 							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
-									kubeStatefulsetValue: webDb,
-									kubeNamespaceValue2:  webValue4,
-									"kube_app":           "sample",
+									"kube_statefulset": "web-db",
+									"kube_namespace":   "web",
+									"kube_app":         "sample",
 								},
 							},
 						},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProviderValue,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue2,
-									APPKey: yyyValue2,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -854,30 +767,6 @@ func TestFittingJobResources(t *testing.T) {
 }
 
 func TestEstimatorResources(t *testing.T) {
-	const ihpaAkeCyberagentCoJpFittingjobId = "ihpa.ake.cyberagent.co.jp/fittingjob-id"
-	const yyyValue = "yyy"
-	const xxxValue = "xxx"
-	const webValue3 = "web"
-	const sample2Value3 = "sample2"
-	const sampleProvider = "sample-provider"
-	const rawValue = "raw"
-	const nginxNetRequestPerSValue2 = "nginx.net.request_per_s"
-	const kubernetesCpuUsageTotal = "kubernetes.cpu.usage.total"
-	const kubeSystemUid9833e04fA68947f9B58836a616432abd = "kube_system_uid:9833e04f-a689-47f9-b588-36a616432abd"
-	const kubeSystemUid46f9e396D3c44103A80749054f47bbfb = "kube_system_uid:46f9e396-d3c4-4103-a807-49054f47bbfb"
-	const kubeStatefulsetWebDb = "kube_statefulset:web-db"
-	const kubeNamespaceWeb = "kube_namespace:web"
-	const kubeNamespaceDefault = "kube_namespace:default"
-	const kubeDeploymentNginx = "kube_deployment:nginx"
-	const ihpaAkeCyberagentCoJpV1Value = "ihpa.ake.cyberagent.co.jp/v1"
-	const ihpaSample2NginxNetRequestPerS = "ihpa-sample2-nginx-net-request-per-s"
-	const ihpaSample2Memory = "ihpa-sample2-memory"
-	const ihpaSample2Cpu = "ihpa-sample2-cpu"
-	const ihpaSample1CpuValue = "ihpa-sample1-cpu"
-	const defaultValue5 = "default"
-	const akeIhpaForecastedKubernetesCpuUsageTotal = "ake.ihpa.forecasted_kubernetes_cpu_usage_total"
-	const intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue2 = "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp"
-	const id9fc642f3Bb9d404dAfd5D04f1d6149adValue = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		base     *ihpaGeneratorImpl
@@ -888,44 +777,44 @@ func TestEstimatorResources(t *testing.T) {
 			expected: []ihpav1beta2.Estimator{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample1CpuValue,
-						Namespace: defaultValue5,
+						Name:      "ihpa-sample1-cpu",
+						Namespace: "default",
 						OwnerReferences: []metav1.OwnerReference{
 							{
 								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue2,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
 								Name:               "sample1",
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue,
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobId: "b9aa658a6b30a452ee08d0fbea2c4f40",
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "b9aa658a6b30a452ee08d0fbea2c4f40",
 						},
 					},
 					Spec: ihpav1beta2.EstimatorSpec{
 						Mode:       "adjust",
 						GapMinutes: 5,
-						MetricName: akeIhpaForecastedKubernetesCpuUsageTotal,
+						MetricName: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 						MetricTags: []string{
-							kubeDeploymentNginx,
-							kubeNamespaceDefault,
-							kubeSystemUid46f9e396D3c44103A80749054f47bbfb,
+							"kube_deployment:nginx",
+							"kube_namespace:default",
+							"kube_system_uid:46f9e396-d3c4-4103-a807-49054f47bbfb",
 						},
-						BaseMetricName: kubernetesCpuUsageTotal,
+						BaseMetricName: "kubernetes.cpu.usage.total",
 						BaseMetricTags: []string{
-							kubeDeploymentNginx,
-							kubeNamespaceDefault,
-							kubeSystemUid46f9e396D3c44103A80749054f47bbfb,
+							"kube_deployment:nginx",
+							"kube_namespace:default",
+							"kube_system_uid:46f9e396-d3c4-4103-a807-49054f47bbfb",
 						},
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample1CpuValue},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample1-cpu"},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProvider,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue,
-									APPKey: yyyValue,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -938,44 +827,44 @@ func TestEstimatorResources(t *testing.T) {
 			expected: []ihpav1beta2.Estimator{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample2Cpu,
-						Namespace: webValue3,
+						Name:      "ihpa-sample2-cpu",
+						Namespace: "web",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion:         ihpaAkeCyberagentCoJpV1Value,
+								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue2,
-								Name:               sample2Value3,
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+								Name:               "sample2",
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobId: "69f9447bad75992b533334827ce092ad",
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "69f9447bad75992b533334827ce092ad",
 						},
 					},
 					Spec: ihpav1beta2.EstimatorSpec{
-						Mode:       rawValue,
+						Mode:       "raw",
 						GapMinutes: 10,
-						MetricName: akeIhpaForecastedKubernetesCpuUsageTotal,
+						MetricName: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 						MetricTags: []string{
-							kubeNamespaceWeb,
-							kubeStatefulsetWebDb,
-							kubeSystemUid9833e04fA68947f9B58836a616432abd,
+							"kube_namespace:web",
+							"kube_statefulset:web-db",
+							"kube_system_uid:9833e04f-a689-47f9-b588-36a616432abd",
 						},
-						BaseMetricName: kubernetesCpuUsageTotal,
+						BaseMetricName: "kubernetes.cpu.usage.total",
 						BaseMetricTags: []string{
-							kubeNamespaceWeb,
-							kubeStatefulsetWebDb,
-							kubeSystemUid9833e04fA68947f9B58836a616432abd,
+							"kube_namespace:web",
+							"kube_statefulset:web-db",
+							"kube_system_uid:9833e04f-a689-47f9-b588-36a616432abd",
 						},
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample2Cpu},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample2-cpu"},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProvider,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue,
-									APPKey: yyyValue,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -983,44 +872,44 @@ func TestEstimatorResources(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample2Memory,
-						Namespace: webValue3,
+						Name:      "ihpa-sample2-memory",
+						Namespace: "web",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion:         ihpaAkeCyberagentCoJpV1Value,
+								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue2,
-								Name:               sample2Value3,
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+								Name:               "sample2",
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobId: "c5abea3be857f41dc43ed7dec2eee7e3",
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "c5abea3be857f41dc43ed7dec2eee7e3",
 						},
 					},
 					Spec: ihpav1beta2.EstimatorSpec{
-						Mode:       rawValue,
+						Mode:       "raw",
 						GapMinutes: 10,
 						MetricName: "ake.ihpa.forecasted_kubernetes_memory_usage",
 						MetricTags: []string{
-							kubeNamespaceWeb,
-							kubeStatefulsetWebDb,
-							kubeSystemUid9833e04fA68947f9B58836a616432abd,
+							"kube_namespace:web",
+							"kube_statefulset:web-db",
+							"kube_system_uid:9833e04f-a689-47f9-b588-36a616432abd",
 						},
 						BaseMetricName: "kubernetes.memory.usage",
 						BaseMetricTags: []string{
-							kubeNamespaceWeb,
-							kubeStatefulsetWebDb,
-							kubeSystemUid9833e04fA68947f9B58836a616432abd,
+							"kube_namespace:web",
+							"kube_statefulset:web-db",
+							"kube_system_uid:9833e04f-a689-47f9-b588-36a616432abd",
 						},
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample2Memory},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample2-memory"},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProvider,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue,
-									APPKey: yyyValue,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -1028,44 +917,44 @@ func TestEstimatorResources(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      ihpaSample2NginxNetRequestPerS,
-						Namespace: webValue3,
+						Name:      "ihpa-sample2-nginx-net-request-per-s",
+						Namespace: "web",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion:         ihpaAkeCyberagentCoJpV1Value,
+								APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 								Controller:         func(b bool) *bool { return &b }(true),
 								BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-								Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue2,
-								Name:               sample2Value3,
-								UID:                id9fc642f3Bb9d404dAfd5D04f1d6149adValue,
+								Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+								Name:               "sample2",
+								UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 							},
 						},
 						Annotations: map[string]string{
-							ihpaAkeCyberagentCoJpFittingjobId: "e9932760a233dffd256e6e0de941096e",
+							"ihpa.ake.cyberagent.co.jp/fittingjob-id": "e9932760a233dffd256e6e0de941096e",
 						},
 					},
 					Spec: ihpav1beta2.EstimatorSpec{
-						Mode:       rawValue,
+						Mode:       "raw",
 						GapMinutes: 10,
 						MetricName: "ake.ihpa.forecasted_nginx_net_request_per_s",
 						MetricTags: []string{
-							kubeNamespaceWeb,
-							kubeStatefulsetWebDb,
-							kubeSystemUid9833e04fA68947f9B58836a616432abd,
+							"kube_namespace:web",
+							"kube_statefulset:web-db",
+							"kube_system_uid:9833e04f-a689-47f9-b588-36a616432abd",
 						},
-						BaseMetricName: nginxNetRequestPerSValue2,
+						BaseMetricName: "nginx.net.request_per_s",
 						BaseMetricTags: []string{
 							"kube_app:sample",
-							kubeNamespaceWeb,
-							kubeStatefulsetWebDb,
+							"kube_namespace:web",
+							"kube_statefulset:web-db",
 						},
-						DataConfigMap: corev1.LocalObjectReference{Name: ihpaSample2NginxNetRequestPerS},
+						DataConfigMap: corev1.LocalObjectReference{Name: "ihpa-sample2-nginx-net-request-per-s"},
 						Provider: ihpav1beta2.MetricProvider{
-							Name: sampleProvider,
+							Name: "sample-provider",
 							ProviderSource: ihpav1beta2.ProviderSource{
 								Datadog: &ihpav1beta2.DatadogProviderSource{
-									APIKey: xxxValue,
-									APPKey: yyyValue,
+									APIKey: "xxx",
+									APPKey: "yyy",
 								},
 							},
 						},
@@ -1089,16 +978,6 @@ func TestEstimatorResources(t *testing.T) {
 }
 
 func TestRBACResources(t *testing.T) {
-	const webValue2 = "web"
-	const sample2Value2 = "sample2"
-	const sample1Value2 = "sample1"
-	const ihpaAkeCyberagentCoJpV1beta1 = "ihpa.ake.cyberagent.co.jp/v1beta1"
-	const ihpaAkeCyberagentCoJpV1 = "ihpa.ake.cyberagent.co.jp/v1"
-	const ihpaSample2 = "ihpa-sample2"
-	const ihpaSample1 = "ihpa-sample1"
-	const defaultValue4 = "default"
-	const intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue = "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp"
-	const id9fc642f3Bb9d404dAfd5D04f1d6149ad = "9fc642f3-bb9d-404d-afd5-d04f1d6149ad"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator           *ihpaGeneratorImpl
@@ -1110,32 +989,32 @@ func TestRBACResources(t *testing.T) {
 			generator: sample1,
 			expectedSA: &corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample1,
-					Namespace: defaultValue4,
+					Name:      "ihpa-sample1",
+					Namespace: "default",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         ihpaAkeCyberagentCoJpV1beta1,
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue,
-							Name:               sample1Value2,
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
 			},
 			expectedRole: &rbacv1.Role{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample1,
-					Namespace: defaultValue4,
+					Name:      "ihpa-sample1",
+					Namespace: "default",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         ihpaAkeCyberagentCoJpV1beta1,
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue,
-							Name:               sample1Value2,
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
@@ -1150,30 +1029,30 @@ func TestRBACResources(t *testing.T) {
 			},
 			expectedRoleBinding: &rbacv1.RoleBinding{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample1,
-					Namespace: defaultValue4,
+					Name:      "ihpa-sample1",
+					Namespace: "default",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         ihpaAkeCyberagentCoJpV1beta1,
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue,
-							Name:               sample1Value2,
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
 				RoleRef: rbacv1.RoleRef{
 					APIGroup: "rbac.authorization.k8s.io",
 					Kind:     "Role",
-					Name:     ihpaSample1,
+					Name:     "ihpa-sample1",
 				},
 				Subjects: []rbacv1.Subject{
 					{
 						APIGroup:  "",
 						Kind:      "ServiceAccount",
-						Name:      ihpaSample1,
-						Namespace: defaultValue4,
+						Name:      "ihpa-sample1",
+						Namespace: "default",
 					},
 				},
 			},
@@ -1182,32 +1061,32 @@ func TestRBACResources(t *testing.T) {
 			generator: sample2,
 			expectedSA: &corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample2,
-					Namespace: webValue2,
+					Name:      "ihpa-sample2",
+					Namespace: "web",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         ihpaAkeCyberagentCoJpV1,
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue,
-							Name:               sample2Value2,
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample2",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
 			},
 			expectedRole: &rbacv1.Role{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample2,
-					Namespace: webValue2,
+					Name:      "ihpa-sample2",
+					Namespace: "web",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         ihpaAkeCyberagentCoJpV1,
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue,
-							Name:               sample2Value2,
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample2",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
@@ -1226,30 +1105,30 @@ func TestRBACResources(t *testing.T) {
 			},
 			expectedRoleBinding: &rbacv1.RoleBinding{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ihpaSample2,
-					Namespace: webValue2,
+					Name:      "ihpa-sample2",
+					Namespace: "web",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         ihpaAkeCyberagentCoJpV1,
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJpValue,
-							Name:               sample2Value2,
-							UID:                id9fc642f3Bb9d404dAfd5D04f1d6149ad,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample2",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
 				RoleRef: rbacv1.RoleRef{
 					APIGroup: "rbac.authorization.k8s.io",
 					Kind:     "Role",
-					Name:     ihpaSample2,
+					Name:     "ihpa-sample2",
 				},
 				Subjects: []rbacv1.Subject{
 					{
 						APIGroup:  "",
 						Kind:      "ServiceAccount",
-						Name:      ihpaSample2,
-						Namespace: webValue2,
+						Name:      "ihpa-sample2",
+						Namespace: "web",
 					},
 				},
 			},
@@ -1274,12 +1153,6 @@ func TestRBACResources(t *testing.T) {
 }
 
 func TestStatusConfigMapResource(t *testing.T) {
-	const webValue = "web"
-	const sample2Value = "sample2"
-	const sample1Value = "sample1"
-	const ihpaSample1Cpu = "ihpa-sample1-cpu"
-	const defaultValue3 = "default"
-	const intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJp = "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		name      string
@@ -1287,44 +1160,44 @@ func TestStatusConfigMapResource(t *testing.T) {
 		expected  *corev1.ConfigMap
 	}{
 		{
-			name:      sample1Value,
+			name:      "sample1",
 			generator: sample1,
 			expected: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ihpa-sample1-status",
-					Namespace: defaultValue3,
+					Namespace: "default",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJp,
-							Name:               sample1Value,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
 							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
 				},
 				Data: map[string]string{
 					"hpaName":         "ihpa-sample1",
-					"fittingJobNames": ihpaSample1Cpu,
-					"estimatorNames":  ihpaSample1Cpu,
+					"fittingJobNames": "ihpa-sample1-cpu",
+					"estimatorNames":  "ihpa-sample1-cpu",
 				},
 			},
 		},
 		{
-			name:      sample2Value,
+			name:      "sample2",
 			generator: sample2,
 			expected: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ihpa-sample2-status",
-					Namespace: webValue,
+					Namespace: "web",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1",
 							Controller:         func(b bool) *bool { return &b }(true),
 							BlockOwnerDeletion: func(b bool) *bool { return &b }(true),
-							Kind:               intelligentHorizontalPodAutoscalerIhpaAkeCyberagentCoJp,
-							Name:               sample2Value,
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample2",
 							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
 						},
 					},
@@ -1364,19 +1237,6 @@ func TestStatusConfigMapResource(t *testing.T) {
 }
 
 func TestGenerateForecastedMetricSpec(t *testing.T) {
-	const nginxNetRequestPerSValue = "nginx.net.request_per_s"
-	const nginxValue = "nginx"
-	const kubeSystemUidValue = "kube_system_uid"
-	const kubeStatefulset = "kube_statefulset"
-	const kubeNamespaceValue = "kube_namespace"
-	const kubeDeploymentValue = "kube_deployment"
-	const defaultValue2 = "default"
-	const cpuValue3 = "cpu"
-	const utilizationValue2 = "Utilization"
-	const resourceValue3 = "Resource"
-	const externalValue2 = "External"
-	const averageValueValue3 = "AverageValue"
-	const id46f9e396D3c44103A80749054f47bbfb = "46f9e396-d3c4-4103-a807-49054f47bbfb"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
@@ -1386,30 +1246,30 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 		{
 			generator: sample1,
 			metric: &autoscalingv2.MetricSpec{
-				Type: resourceValue3,
+				Type: "Resource",
 				Resource: &autoscalingv2.ResourceMetricSource{
-					Name: cpuValue3,
+					Name: "cpu",
 					Target: autoscalingv2.MetricTarget{
-						Type:               utilizationValue2,
+						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
 			},
 			expected: &autoscalingv2.MetricSpec{
-				Type: externalValue2,
+				Type: "External",
 				External: &autoscalingv2.ExternalMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
 						Name: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								kubeSystemUidValue:  id46f9e396D3c44103A80749054f47bbfb,
-								kubeNamespaceValue:  defaultValue2,
-								kubeDeploymentValue: nginxValue,
+								"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+								"kube_namespace":  "default",
+								"kube_deployment": "nginx",
 							},
 						},
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValueValue3,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(resource.NewQuantity(150, resource.DecimalSI).ScaledValue(resource.Micro), resource.DecimalSI),
 					},
 				},
@@ -1418,10 +1278,10 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 		{
 			generator: sample2,
 			metric: &autoscalingv2.MetricSpec{
-				Type: externalValue2,
+				Type: "External",
 				External: &autoscalingv2.ExternalMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
-						Name: nginxNetRequestPerSValue,
+						Name: "nginx.net.request_per_s",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"ownlabel": "hello",
@@ -1429,26 +1289,26 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 						},
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValueValue3,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
 			},
 			expected: &autoscalingv2.MetricSpec{
-				Type: externalValue2,
+				Type: "External",
 				External: &autoscalingv2.ExternalMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
 						Name: "ake.ihpa.forecasted_nginx_net_request_per_s",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								kubeSystemUidValue: "9833e04f-a689-47f9-b588-36a616432abd",
-								kubeNamespaceValue: "web",
-								kubeStatefulset:    "web-db",
+								"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+								"kube_namespace":   "web",
+								"kube_statefulset": "web-db",
 							},
 						},
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValueValue3,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
@@ -1468,14 +1328,6 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 }
 
 func TestConvertMetricSpecToIdentifier(t *testing.T) {
-	const requestsPerSecond = "requests-per-second"
-	const packetsPerSecond = "packets-per-second"
-	const nginxNetRequestPerS = "nginx.net.request_per_s"
-	const kubeDeployment = "kube_deployment"
-	const cpuValue2 = "cpu"
-	const resourceValue2 = "Resource"
-	const externalValue = "External"
-	const averageValueValue2 = "AverageValue"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
@@ -1485,9 +1337,9 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 		{
 			generator: sample1,
 			metric: &autoscalingv2.MetricSpec{
-				Type: resourceValue2,
+				Type: "Resource",
 				Resource: &autoscalingv2.ResourceMetricSource{
-					Name: cpuValue2,
+					Name: "cpu",
 					Target: autoscalingv2.MetricTarget{
 						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
@@ -1500,7 +1352,7 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 					MatchLabels: map[string]string{
 						"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
 						"kube_namespace":  "default",
-						kubeDeployment:    "nginx",
+						"kube_deployment": "nginx",
 					},
 				},
 			},
@@ -1508,10 +1360,10 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 		{
 			generator: sample2,
 			metric: &autoscalingv2.MetricSpec{
-				Type: externalValue,
+				Type: "External",
 				External: &autoscalingv2.ExternalMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
-						Name: nginxNetRequestPerS,
+						Name: "nginx.net.request_per_s",
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"super_identifier": "hi",
@@ -1519,13 +1371,13 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 						},
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValueValue2,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
 			},
 			expected: &autoscalingv2.MetricIdentifier{
-				Name: nginxNetRequestPerS,
+				Name: "nginx.net.request_per_s",
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						"super_identifier": "hi",
@@ -1539,7 +1391,7 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 				Type: "Object",
 				Object: &autoscalingv2.ObjectMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
-						Name: requestsPerSecond,
+						Name: "requests-per-second",
 					},
 					DescribedObject: autoscalingv2.CrossVersionObjectReference{
 						Kind:       "Ingress",
@@ -1553,7 +1405,7 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 				},
 			},
 			expected: &autoscalingv2.MetricIdentifier{
-				Name: requestsPerSecond,
+				Name: "requests-per-second",
 			},
 		},
 		{
@@ -1562,16 +1414,16 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 				Type: "Pods",
 				Pods: &autoscalingv2.PodsMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
-						Name: packetsPerSecond,
+						Name: "packets-per-second",
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValueValue2,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
 			},
 			expected: &autoscalingv2.MetricIdentifier{
-				Name: packetsPerSecond,
+				Name: "packets-per-second",
 			},
 		},
 	}
@@ -1591,9 +1443,6 @@ func TestConvertMetricSpecToIdentifier(t *testing.T) {
 }
 
 func TestUniqueMetricID(t *testing.T) {
-	const utilizationValue = "Utilization"
-	const resourceValue = "Resource"
-	const averageValueValue = "AverageValue"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
@@ -1603,11 +1452,11 @@ func TestUniqueMetricID(t *testing.T) {
 		{
 			generator: sample1,
 			metric: &autoscalingv2.MetricSpec{
-				Type: resourceValue,
+				Type: "Resource",
 				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "cpu",
 					Target: autoscalingv2.MetricTarget{
-						Type:               utilizationValue,
+						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
@@ -1623,7 +1472,7 @@ func TestUniqueMetricID(t *testing.T) {
 						Name: "hello_world.metric",
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValueValue,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
@@ -1633,11 +1482,11 @@ func TestUniqueMetricID(t *testing.T) {
 		{
 			generator: sample2,
 			metric: &autoscalingv2.MetricSpec{
-				Type: resourceValue,
+				Type: "Resource",
 				Resource: &autoscalingv2.ResourceMetricSource{
 					Name: "memory",
 					Target: autoscalingv2.MetricTarget{
-						Type:               utilizationValue,
+						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
@@ -1696,8 +1545,6 @@ func TestUniqueMetricTags(t *testing.T) {
 }
 
 func TestUniqueMetricFilters(t *testing.T) {
-	const kubeSystemUid = "kube_system_uid"
-	const kubeNamespace = "kube_namespace"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
@@ -1706,16 +1553,16 @@ func TestUniqueMetricFilters(t *testing.T) {
 		{
 			generator: sample1,
 			expected: map[string]string{
-				kubeSystemUid:     "46f9e396-d3c4-4103-a807-49054f47bbfb",
-				kubeNamespace:     "default",
+				"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+				"kube_namespace":  "default",
 				"kube_deployment": "nginx",
 			},
 		},
 		{
 			generator: sample2,
 			expected: map[string]string{
-				kubeSystemUid:      "9833e04f-a689-47f9-b588-36a616432abd",
-				kubeNamespace:      "web",
+				"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+				"kube_namespace":   "web",
 				"kube_statefulset": "web-db",
 			},
 		},
@@ -1730,10 +1577,6 @@ func TestUniqueMetricFilters(t *testing.T) {
 }
 
 func TestIhpaMetricString(t *testing.T) {
-	const cpuValue = "cpu"
-	const utilization = "Utilization"
-	const external = "External"
-	const averageValue = "AverageValue"
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {
 		generator *ihpaGeneratorImpl
@@ -1745,9 +1588,9 @@ func TestIhpaMetricString(t *testing.T) {
 			metric: &autoscalingv2.MetricSpec{
 				Type: "Resource",
 				Resource: &autoscalingv2.ResourceMetricSource{
-					Name: cpuValue,
+					Name: "cpu",
 					Target: autoscalingv2.MetricTarget{
-						Type:               utilization,
+						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
@@ -1757,11 +1600,11 @@ func TestIhpaMetricString(t *testing.T) {
 		{
 			generator: sample1,
 			metric: &autoscalingv2.MetricSpec{
-				Type: external,
+				Type: "External",
 				Resource: &autoscalingv2.ResourceMetricSource{
-					Name: cpuValue,
+					Name: "cpu",
 					Target: autoscalingv2.MetricTarget{
-						Type:               utilization,
+						Type:               "Utilization",
 						AverageUtilization: func(i int32) *int32 { return &i }(30),
 					},
 				},
@@ -1770,7 +1613,7 @@ func TestIhpaMetricString(t *testing.T) {
 						Name: "hello_world.metric",
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValue,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
@@ -1780,13 +1623,13 @@ func TestIhpaMetricString(t *testing.T) {
 		{
 			generator: sample2,
 			metric: &autoscalingv2.MetricSpec{
-				Type: external,
+				Type: "External",
 				External: &autoscalingv2.ExternalMetricSource{
 					Metric: autoscalingv2.MetricIdentifier{
 						Name: "nginx.net.request_per_s",
 					},
 					Target: autoscalingv2.MetricTarget{
-						Type:         averageValue,
+						Type:         "AverageValue",
 						AverageValue: resource.NewQuantity(100, resource.DecimalSI),
 					},
 				},
@@ -1828,9 +1671,6 @@ func TestIhpaString(t *testing.T) {
 }
 
 func TestResolveDatadogKeysFromEnv(t *testing.T) {
-	const defaultValue = "default"
-	const aPPKey = "APPKey"
-	const aPIKey = "APIKey"
 	tests := []struct {
 		name        string
 		namespace   string
@@ -1843,7 +1683,7 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 	}{
 		{
 			name:      "resolve keys from secret",
-			namespace: defaultValue,
+			namespace: "default",
 			datadog: &ihpav1beta2.DatadogProviderSource{
 				KeysFrom: []corev1.EnvFromSource{
 					{
@@ -1855,10 +1695,10 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Name: "datadog-keys", Namespace: defaultValue},
+					ObjectMeta: metav1.ObjectMeta{Name: "datadog-keys", Namespace: "default"},
 					Data: map[string][]byte{
-						aPIKey: []byte("secret-api-key"),
-						aPPKey: []byte("secret-app-key"),
+						"APIKey": []byte("secret-api-key"),
+						"APPKey": []byte("secret-app-key"),
 					},
 				},
 			},
@@ -1867,7 +1707,7 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 		},
 		{
 			name:      "resolve keys from configmap",
-			namespace: defaultValue,
+			namespace: "default",
 			datadog: &ihpav1beta2.DatadogProviderSource{
 				KeysFrom: []corev1.EnvFromSource{
 					{
@@ -1879,10 +1719,10 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 			},
 			configMaps: []runtime.Object{
 				&corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{Name: "datadog-keys-cm", Namespace: defaultValue},
+					ObjectMeta: metav1.ObjectMeta{Name: "datadog-keys-cm", Namespace: "default"},
 					Data: map[string]string{
-						aPIKey: "cm-api-key",
-						aPPKey: "cm-app-key",
+						"APIKey": "cm-api-key",
+						"APPKey": "cm-app-key",
 					},
 				},
 			},
@@ -1891,7 +1731,7 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 		},
 		{
 			name:      "resolve keys from secret with prefix",
-			namespace: defaultValue,
+			namespace: "default",
 			datadog: &ihpav1beta2.DatadogProviderSource{
 				KeysFrom: []corev1.EnvFromSource{
 					{
@@ -1903,9 +1743,9 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Name: "dd-keys", Namespace: defaultValue},
+					ObjectMeta: metav1.ObjectMeta{Name: "dd-keys", Namespace: "default"},
 					Data: map[string][]byte{
-						aPIKey: []byte("api-from-secret"),
+						"APIKey": []byte("api-from-secret"),
 					},
 				},
 			},
@@ -1914,7 +1754,7 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 		},
 		{
 			name:      "optional secret not found is skipped",
-			namespace: defaultValue,
+			namespace: "default",
 			datadog: &ihpav1beta2.DatadogProviderSource{
 				KeysFrom: []corev1.EnvFromSource{
 					{
@@ -1930,7 +1770,7 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 		},
 		{
 			name:      "required secret not found returns error",
-			namespace: defaultValue,
+			namespace: "default",
 			datadog: &ihpav1beta2.DatadogProviderSource{
 				KeysFrom: []corev1.EnvFromSource{
 					{
@@ -1944,7 +1784,7 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 		},
 		{
 			name:      "multiple sources - secret overrides configmap",
-			namespace: defaultValue,
+			namespace: "default",
 			datadog: &ihpav1beta2.DatadogProviderSource{
 				KeysFrom: []corev1.EnvFromSource{
 					{
@@ -1961,19 +1801,19 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Name: "secret-keys", Namespace: defaultValue},
+					ObjectMeta: metav1.ObjectMeta{Name: "secret-keys", Namespace: "default"},
 					Data: map[string][]byte{
-						aPIKey: []byte("final-api-key"),
-						aPPKey: []byte("final-app-key"),
+						"APIKey": []byte("final-api-key"),
+						"APPKey": []byte("final-app-key"),
 					},
 				},
 			},
 			configMaps: []runtime.Object{
 				&corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{Name: "cm-keys", Namespace: defaultValue},
+					ObjectMeta: metav1.ObjectMeta{Name: "cm-keys", Namespace: "default"},
 					Data: map[string]string{
-						aPIKey: "initial-api-key",
-						aPPKey: "initial-app-key",
+						"APIKey": "initial-api-key",
+						"APPKey": "initial-app-key",
 					},
 				},
 			},
@@ -1982,7 +1822,7 @@ func TestResolveDatadogKeysFromEnv(t *testing.T) {
 		},
 		{
 			name:      "no keysFrom - no change",
-			namespace: defaultValue,
+			namespace: "default",
 			datadog: &ihpav1beta2.DatadogProviderSource{
 				APIKey: "original-api",
 				APPKey: "original-app",

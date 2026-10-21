@@ -47,7 +47,15 @@ helm upgrade datadog datadog/datadog \
   --set-string "datadog.tags[0]=kube_system_uid:${KUBE_SYSTEM_UID}"
 ```
 
-Include existing `datadog.tags` entries at additional `tags[n]` indices. To change only the configuration, specify the currently installed chart version with `--version`. Directly patching the DaemonSet may be overwritten by Helm, so use upgrade in Helm-managed environments. Changing the settings may roll out the Agent. For an Agent not managed by Helm, apply equivalent values to its configuration source or apply a corresponding patch.
+`datadog.tags` is a list, so even with `--reuse-values` the existing tags are not carried over; the whole list is replaced by the values you specify. If you already have tags, check the current values before upgrading and specify all of them as `tags[0]`, `tags[1]`, ...
+
+```sh
+helm get values datadog -o yaml
+```
+
+If you have many tags, consider exporting the values to a YAML file first and adding to it.
+
+Also, changing the settings may roll out the Agent. For an Agent not managed by Helm, apply equivalent values to its configuration source or apply a corresponding patch.
 
 ### Prometheus
 

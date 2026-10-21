@@ -46,7 +46,15 @@ helm upgrade datadog datadog/datadog \
   --set-string "datadog.tags[0]=kube_system_uid:${KUBE_SYSTEM_UID}"
 ```
 
-`datadog.tags` の既存タグは追加の `tags[n]` に含めてください。設定だけを変更する場合は、現在の chart version を `--version` に指定します。設定変更により Agent は再起動する場合があります。Helm 管理でない Agent は、管理元の設定に同等の値を反映するか、対応する patch を適用してください。
+`datadog.tags` は list のため、`--reuse-values` を使っても既存のタグは引き継がれず、指定した値で list 全体が置き換わります。既存のタグがある場合は、upgrade の前に現在の値を確認し、`tags[0]`, `tags[1]`, ... として全て指定してください。
+
+```sh
+helm get values datadog -o yaml
+```
+
+タグが多い場合は、一度 yaml ファイルに書き出してから追記することも検討してください。
+
+また、設定変更により Agent は再起動する場合があります。Helm 管理でない Agent は、管理元の設定に同等の値を反映するか、対応する patch を適用してください。
 
 ### Prometheus
 

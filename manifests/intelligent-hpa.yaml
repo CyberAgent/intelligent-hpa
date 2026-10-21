@@ -1744,6 +1744,7 @@ spec:
                                               referred to by services.
                                             type: string
                                           protocol:
+                                            default: TCP
                                             description: |-
                                               Protocol for port. Must be UDP, TCP, or SCTP.
                                               Defaults to "TCP".
@@ -4144,6 +4145,7 @@ spec:
                                               referred to by services.
                                             type: string
                                           protocol:
+                                            default: TCP
                                             description: |-
                                               Protocol for port. Must be UDP, TCP, or SCTP.
                                               Defaults to "TCP".
@@ -12572,7 +12574,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: ghcr.io/CyberAgent/intelligent-hpa/intelligent-hpa-controller:latest
+        image: ghcr.io/cyberagent/intelligent-hpa/intelligent-hpa-controller:latest
         name: manager
         resources:
           limits:

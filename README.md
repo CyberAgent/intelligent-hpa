@@ -14,35 +14,48 @@ Select metrics provider for storing predicted metrics.
 
 ### Datadog
 
-Install Datadog Agent and Datadog Cluster Agent.
-
-```
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
-
-KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
-
-helm install datadog stable/datadog \
-  --set datadog.apiKey=xxx \
-  --set datadog.appKey=yyy \
-  --set clusterAgent.enabled=true \
-  --set clusterAgent.metricsProvider.enabled=true \
-  --set datadog.env[0].name="DD_CHECKS_TAG_CARDINALITY" \
-  --set datadog.env[0].value="orchestrator" \
-  --set datadog.tags={"kube_system_uid:${KUBE_SYSTEM_UID}"}
-```
-
-If you already installed them, you have to add a tag of `kube-system` Namespace UID for unique identification of your cluster. The tag is needed for identification of **Resource** metrics such as `cpu` and `memory`. Datadog Agent will be restarted by running below commands.
+Install Datadog Agent and Datadog Cluster Agent. See the [official Datadog Helm chart documentation](https://docs.datadoghq.com/containers/kubernetes/installation/?tab=helm) for details. If Datadog is already installed, run the upgrade command below instead.
 
 ```sh
-TMP_DD_TAGS=$(kubectl get ds <your_datadog_agent> -o jsonpath='{.spec.template.spec.containers[*].env[?(@.name == "DD_TAGS")].value}')
 KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
 
-TMP_DD_TAGS="${TMP_DD_TAGS} kube_system_uid:${KUBE_SYSTEM_UID}"
+helm repo add datadog https://helm.datadoghq.com
 
-kubectl patch ds <your_datadog_agent> -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"agent\",\"env\":[{\"name\":\"DD_TAGS\",\"value\":\"${TMP_DD_TAGS}\"}]}]}}}}"
+helm repo update
 
-# if error occurred, please change containers[0].name replace to "datadog"
+helm install datadog datadog/datadog \
+  --set datadog.apiKey=xxx \
+  --set datadog.appKey=yyy \
+  --set clusterAgent.metricsProvider.enabled=true \
+  --set datadog.checksCardinality=orchestrator \
+  --set-string "datadog.tags[0]=kube_system_uid:${KUBE_SYSTEM_UID}"
 ```
+
+IHPA requires the external metrics provider, an API key, and an application key with metric read access. Separately from the Agent's credentials, also configure Datadog credentials in IHPA's `metricProvider` as described in [Usage](#usage).
+
+If Datadog is already installed, use the upgrade command below. `--reuse-values` retains the current credentials and applies the additional settings.
+
+```sh
+KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
+
+helm repo update
+
+helm upgrade datadog datadog/datadog \
+  --reuse-values \
+  --set clusterAgent.metricsProvider.enabled=true \
+  --set datadog.checksCardinality=orchestrator \
+  --set-string "datadog.tags[0]=kube_system_uid:${KUBE_SYSTEM_UID}"
+```
+
+`datadog.tags` is a list, so even with `--reuse-values` the existing tags are not carried over; the whole list is replaced by the values you specify. If you already have tags, check the current values before upgrading and specify all of them as `tags[0]`, `tags[1]`, ...
+
+```sh
+helm get values datadog -o yaml
+```
+
+If you have many tags, consider exporting the values to a YAML file first and adding to it.
+
+Also, changing the settings may roll out the Agent. For an Agent not managed by Helm, apply equivalent values to its configuration source or apply a corresponding patch.
 
 ### Prometheus
 

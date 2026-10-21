@@ -21,6 +21,8 @@ KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}
 
 helm repo add datadog https://helm.datadoghq.com
 
+helm repo update
+
 helm install datadog datadog/datadog \
   --set datadog.apiKey=xxx \
   --set datadog.appKey=yyy \
@@ -35,6 +37,8 @@ If Datadog is already installed, use the upgrade command below. `--reuse-values`
 
 ```sh
 KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
+
+helm repo update
 
 helm upgrade datadog datadog/datadog \
   --reuse-values \

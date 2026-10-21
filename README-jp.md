@@ -20,6 +20,7 @@ Datadog Agent と Datadog Cluster Agent をインストールします。詳細�
 KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
 
 helm repo add datadog https://helm.datadoghq.com
+helm repo update
 
 helm install datadog datadog/datadog \
   --set datadog.apiKey=xxx \
@@ -35,6 +36,8 @@ IHPA では外部メトリクスプロバイダー、API キー、メトリク�
 
 ```sh
 KUBE_SYSTEM_UID=$(kubectl get namespace kube-system -o jsonpath='{.metadata.uid}')
+
+helm repo update
 
 helm upgrade datadog datadog/datadog \
   --reuse-values \

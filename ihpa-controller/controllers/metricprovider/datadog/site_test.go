@@ -14,6 +14,7 @@ func TestDatadogBaseURL(t *testing.T) {
 		{"", BaseURL, false}, {"datadoghq.com", BaseURL, false},
 		{"us5.datadoghq.com", "https://api.us5.datadoghq.com", false},
 		{"datadoghq.eu", "https://api.datadoghq.eu", false},
+		{"uk1.datadoghq.com", "https://api.uk1.datadoghq.com", false},
 		{"attacker.example", "", true},
 	} {
 		t.Run(tt.site, func(t *testing.T) {
@@ -46,6 +47,24 @@ func TestDatadogUS5Requests(t *testing.T) {
 	transport.host = ""
 	_ = d.Send("test.metric", 123, 1, nil, nil)
 	if transport.host != "api.us5.datadoghq.com" {
+		t.Fatalf("Send host=%s", transport.host)
+	}
+}
+
+func TestDatadogUK1Requests(t *testing.T) {
+	t.Setenv("DD_SITE", "uk1.datadoghq.com")
+	old := http.DefaultClient
+	transport := &siteTransport{}
+	http.DefaultClient = &http.Client{Transport: transport}
+	t.Cleanup(func() { http.DefaultClient = old })
+	d := &Datadog{}
+	_, _ = d.Fetch("test.metric", 123, nil, nil)
+	if transport.host != "api.uk1.datadoghq.com" {
+		t.Fatalf("Fetch host=%s", transport.host)
+	}
+	transport.host = ""
+	_ = d.Send("test.metric", 123, 1, nil, nil)
+	if transport.host != "api.uk1.datadoghq.com" {
 		t.Fatalf("Send host=%s", transport.host)
 	}
 }

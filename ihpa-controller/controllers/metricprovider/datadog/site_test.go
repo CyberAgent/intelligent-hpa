@@ -16,12 +16,20 @@ func TestDatadogBaseURL(t *testing.T) {
 		{"datadoghq.eu", "https://api.datadoghq.eu", false},
 		{"uk1.datadoghq.com", "https://api.uk1.datadoghq.com", false},
 		{"attacker.example", "", true},
+		{"ddog-gov.com", "", true},
+		{"us2.ddog-gov.com", "", true},
 	} {
 		t.Run(tt.site, func(t *testing.T) {
 			t.Setenv("DD_SITE", tt.site)
 			got, err := datadogBaseURL()
 			if (err != nil) != tt.invalid || got != tt.want {
 				t.Fatalf("got %q, %v; want %q, invalid=%v", got, err, tt.want, tt.invalid)
+			}
+			if tt.invalid {
+				wantErr := fmt.Sprintf("unsupported DD_SITE value: %q", tt.site)
+				if err.Error() != wantErr {
+					t.Fatalf("got error %q; want %q", err, wantErr)
+				}
 			}
 		})
 	}

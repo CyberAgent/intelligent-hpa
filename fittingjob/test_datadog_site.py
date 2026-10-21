@@ -28,5 +28,13 @@ class SiteTests(unittest.TestCase):
             for call in send.call_args_list:
                 self.assertTrue(call.args[0].full_url.startswith('https://api.uk1.datadoghq.com/api/v1/query?'))
 
+    def test_unsupported_site_error_includes_value(self):
+        for site in ['attacker.example', 'ddog-gov.com', 'us2.ddog-gov.com']:
+            with self.subTest(site=site), patch.dict(os.environ, {'DD_SITE': site}), patch('fittingjob.datadog.request.urlopen') as send:
+                with self.assertRaises(ValueError) as raised:
+                    Datadog('test-api', 'test-app').fetch_metrics('test.metric', {}, before_days=1)
+                self.assertEqual(str(raised.exception), f'unsupported DD_SITE value: {site!r}')
+                send.assert_not_called()
+
 if __name__ == '__main__':
     unittest.main()

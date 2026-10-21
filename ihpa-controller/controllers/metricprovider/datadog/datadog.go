@@ -30,7 +30,7 @@ func datadogBaseURL() (string, error) {
 	case "datadoghq.com", "us3.datadoghq.com", "us5.datadoghq.com", "datadoghq.eu", "ap1.datadoghq.com", "ap2.datadoghq.com", "uk1.datadoghq.com":
 		return "https://api." + site, nil
 	default:
-		return "", fmt.Errorf("unsupported DD_SITE")
+		return "", fmt.Errorf("unsupported DD_SITE value: %q", site)
 	}
 }
 

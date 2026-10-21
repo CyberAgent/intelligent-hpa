@@ -15,7 +15,7 @@ def query_endpoint() -> str:
     if site not in {'datadoghq.com', 'us3.datadoghq.com', 'us5.datadoghq.com',
                     'datadoghq.eu', 'ap1.datadoghq.com', 'ap2.datadoghq.com',
                     'uk1.datadoghq.com'}:
-        raise ValueError('unsupported DD_SITE')
+        raise ValueError(f'unsupported DD_SITE value: {site!r}')
     return 'https://api.' + site + '/api/v1/query'
 
 

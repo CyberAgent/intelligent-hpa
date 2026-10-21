@@ -19,5 +19,14 @@ class SiteTests(unittest.TestCase):
         with patch.dict(os.environ, {'DD_SITE': 'attacker.example'}):
             with self.assertRaises(ValueError):
                 query_endpoint()
+
+    def test_fetch_uses_uk1(self):
+        with patch.dict(os.environ, {'DD_SITE': 'uk1.datadoghq.com'}), patch('fittingjob.datadog.request.urlopen', side_effect=lambda req: io.BytesIO(b'{"series":[]}')) as send:
+            self.assertEqual(query_endpoint(), 'https://api.uk1.datadoghq.com/api/v1/query')
+            Datadog('test-api', 'test-app').fetch_metrics('test.metric', {}, before_days=1)
+            self.assertTrue(send.called)
+            for call in send.call_args_list:
+                self.assertTrue(call.args[0].full_url.startswith('https://api.uk1.datadoghq.com/api/v1/query?'))
+
 if __name__ == '__main__':
     unittest.main()

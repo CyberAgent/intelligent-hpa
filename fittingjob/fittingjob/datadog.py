@@ -13,7 +13,8 @@ from fittingjob import metrics_provider as mp
 def query_endpoint() -> str:
     site = os.environ.get('DD_SITE') or 'datadoghq.com'
     if site not in {'datadoghq.com', 'us3.datadoghq.com', 'us5.datadoghq.com',
-                    'datadoghq.eu', 'ap1.datadoghq.com', 'ap2.datadoghq.com'}:
+                    'datadoghq.eu', 'ap1.datadoghq.com', 'ap2.datadoghq.com',
+                    'uk1.datadoghq.com'}:
         raise ValueError('unsupported DD_SITE')
     return 'https://api.' + site + '/api/v1/query'
 

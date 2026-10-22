@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
@@ -180,6 +181,27 @@ func TestReconcile_HPAMode(t *testing.T) {
 
 		if got := getHPAForTest(t, r).Spec.MaxReplicas; got != 10 {
 			t.Errorf("hpa maxReplicas = %d, want 10", got)
+		}
+	})
+
+	t.Run("success: ignores the KEDA options", func(t *testing.T) {
+		t.Parallel()
+
+		kubeSystem, deployment := testReconcileObjects()
+		plain := newReconcilerForTest(t, kubeSystem.DeepCopy(), deployment.DeepCopy(), testReconcileIHPA(corev1.ResourceCPU))
+		reconcileForTest(t, plain)
+
+		withKEDA := testReconcileIHPA(corev1.ResourceCPU)
+		withKEDA.Spec.ScaleBackend = ihpav1beta2.ScaleBackend{
+			Type: ihpav1beta2.ScaleBackendHPA,
+			KEDA: &ihpav1beta2.KEDAScaleBackend{PollingInterval: new(int32(30))},
+		}
+		r := newReconcilerForTest(t, kubeSystem, deployment, withKEDA)
+		reconcileForTest(t, r)
+
+		want := getHPAForTest(t, plain).Spec
+		if got := getHPAForTest(t, r).Spec; !reflect.DeepEqual(got, want) {
+			t.Errorf("hpa spec = %v, want %v", got, want)
 		}
 	})
 }

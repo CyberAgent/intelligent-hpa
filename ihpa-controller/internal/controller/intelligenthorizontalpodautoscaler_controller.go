@@ -28,7 +28,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -92,7 +91,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		return ctrl.Result{}, fmt.Errorf("failed to create ihpa manager: %w", err)
 	}
 
-	if err := r.reconcileAutoscaler(ctx, g); err != nil {
+	if err := r.reconcileAutoscaler(ctx, g, &ihpa); err != nil {
 		return ctrl.Result{}, err
 	}
 	if err := r.reconcileForecastPipeline(ctx, g, &ihpa, ihpaNamespacedName); err != nil {
@@ -106,53 +105,47 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 }
 
 // reconcileAutoscaler creates or updates the resource that scales the target workload.
-func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx context.Context, g IntelligentHorizontalPodAutoscalerGenerator) error {
+func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx context.Context, g IntelligentHorizontalPodAutoscalerGenerator, ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler) error {
 	log := ctrl.LoggerFrom(ctx)
-	// * create/update hpa resource
-	hpaResource, err := g.HorizontalPodAutoscalerResource()
+	backend, err := newScalingBackend(ihpa, g)
 	if err != nil {
-		return fmt.Errorf("failed to generate hpa resource: %w", err)
+		return err
+	}
+	gvk := backend.GroupVersionKind()
+
+	autoscaler, err := backend.Build()
+	if err != nil {
+		return fmt.Errorf("failed to generate %s resource: %w", gvk.Kind, err)
 	}
 
-	// Convert HPA to unstructured for autoscaling/v2 compatibility
+	// Both backends are applied as unstructured by their GroupVersionKind, so that one code path serves them.
+	// Typed handling per backend would duplicate the get/create/update/delete logic.
+	// The KEDA types are still used to generate the ScaledObject.
 	// (K8s 1.25+ removed autoscaling/v2beta2, so we use autoscaling/v2)
-	hpaUnstructured := &unstructured.Unstructured{}
-	hpaUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "autoscaling",
-		Version: "v2",
-		Kind:    "HorizontalPodAutoscaler",
-	})
-	hpaUnstructured.SetNamespace(hpaResource.GetNamespace())
-	hpaUnstructured.SetName(hpaResource.GetName())
+	objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(autoscaler)
+	if err != nil {
+		return fmt.Errorf("failed to convert %s to unstructured: %w", gvk.Kind, err)
+	}
+	desired := &unstructured.Unstructured{Object: objMap}
+	desired.SetGroupVersionKind(gvk)
 
-	if err := r.Get(ctx, types.NamespacedName{Namespace: hpaResource.GetNamespace(), Name: hpaResource.GetName()}, hpaUnstructured); apierrors.IsNotFound(err) {
-		log.V(ResourceMessageLogLevel).Info("initialize hpa", "name", hpaResource.GetName())
-		objMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(hpaResource)
-		if convErr != nil {
-			return fmt.Errorf("failed to convert hpa to unstructured: %w", convErr)
+	current := &unstructured.Unstructured{}
+	current.SetGroupVersionKind(gvk)
+	if err := r.Get(ctx, client.ObjectKeyFromObject(desired), current); apierrors.IsNotFound(err) {
+		log.V(ResourceMessageLogLevel).Info("initialize autoscaler", "kind", gvk.Kind, "name", desired.GetName())
+		if err := r.Create(ctx, desired); err != nil {
+			return fmt.Errorf("failed to create %s: %w", gvk.Kind, err)
 		}
-		hpaUnstructured = &unstructured.Unstructured{Object: objMap}
-		hpaUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   "autoscaling",
-			Version: "v2",
-			Kind:    "HorizontalPodAutoscaler",
-		})
-		if err := r.Create(ctx, hpaUnstructured); err != nil {
-			return fmt.Errorf("failed to create hpa: %w", err)
-		}
+		current = desired
 	} else if err != nil {
-		return fmt.Errorf("failed to get hpa: %w", err)
+		return fmt.Errorf("failed to get %s: %w", gvk.Kind, err)
 	} else {
-		specMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(&hpaResource.Spec)
-		if convErr != nil {
-			return fmt.Errorf("failed to convert hpa spec to unstructured: %w", convErr)
-		}
-		hpaUnstructured.Object["spec"] = specMap
-		if err := r.Update(ctx, hpaUnstructured); err != nil {
-			return fmt.Errorf("failed to update hpa: %w", err)
+		current.Object["spec"] = desired.Object["spec"]
+		if err := r.Update(ctx, current); err != nil {
+			return fmt.Errorf("failed to update %s: %w", gvk.Kind, err)
 		}
 	}
-	log.V(ResourceMessageLogLevel).Info("successed to create/update hpa", "kind", hpaUnstructured.GetObjectKind().GroupVersionKind(), "name", hpaUnstructured.GetName())
+	log.V(ResourceMessageLogLevel).Info("successed to create/update autoscaler", "kind", gvk.Kind, "name", current.GetName())
 	return nil
 }
 

@@ -147,8 +147,23 @@ func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2.Ho
 	return &hpa, nil
 }
 
-// generateForecastedMetricSpec returns external MetricSpec for forecasted value.
-func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricSpec, error) {
+// forecastTarget is the forecasted metric of a metric to be predicted.
+// It is shared by the HPA and the KEDA ScaledObject, which read the same forecasted metric.
+type forecastTarget struct {
+	// MetricName is the name of the forecasted metric in the metric provider, e.g. "ake.ihpa.forecasted_<name>".
+	MetricName string
+	// Labels select the series of this IHPA among the forecasted metrics.
+	Labels map[string]string
+	// AverageValue is the target of the forecasted metric per replica.
+	AverageValue resource.Quantity
+
+	// target is the target of the original metric adjusted for the forecasted metric.
+	// It is kept for HPA, which has passed the rest of the original target through.
+	target autoscalingv2.MetricTarget
+}
+
+// forecastTarget returns the forecasted metric of the metric.
+func (g *ihpaGeneratorImpl) forecastTarget(metric *autoscalingv2.MetricSpec) (*forecastTarget, error) {
 	metricName, metricTarget := extractScopedMetricInfo(metric)
 	if metricTarget == nil {
 		return nil, fmt.Errorf("cannot generate correspond metric. please check integrity of the metric instance. (%v)", *metric)
@@ -158,8 +173,6 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	if err != nil {
 		return nil, err
 	}
-	metricIdentifier.Name = correspondForecastedMetricName(metricIdentifier.Name)
-	metricIdentifier.Selector = &metav1.LabelSelector{MatchLabels: g.uniqueMetricFilters()}
 
 	var avgValue resource.Quantity
 	// Utilization of Resource metrics is special value
@@ -225,17 +238,31 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	metricTarget.Type = "AverageValue"
 	metricTarget.AverageValue = &avgValue
 
-	externalSource := &autoscalingv2.ExternalMetricSource{
-		Metric: *metricIdentifier,
-		Target: *metricTarget,
+	return &forecastTarget{
+		MetricName:   correspondForecastedMetricName(metricIdentifier.Name),
+		Labels:       g.uniqueMetricFilters(),
+		AverageValue: avgValue,
+		target:       *metricTarget,
+	}, nil
+}
+
+// generateForecastedMetricSpec returns external MetricSpec for forecasted value.
+func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricSpec, error) {
+	ft, err := g.forecastTarget(metric)
+	if err != nil {
+		return nil, err
 	}
 
-	forecastedMetric := &autoscalingv2.MetricSpec{
-		Type:     autoscalingv2.ExternalMetricSourceType,
-		External: externalSource,
-	}
-
-	return forecastedMetric, nil
+	return &autoscalingv2.MetricSpec{
+		Type: autoscalingv2.ExternalMetricSourceType,
+		External: &autoscalingv2.ExternalMetricSource{
+			Metric: autoscalingv2.MetricIdentifier{
+				Name:     ft.MetricName,
+				Selector: &metav1.LabelSelector{MatchLabels: ft.Labels},
+			},
+			Target: ft.target,
+		},
+	}, nil
 }
 
 // FittingJobResources generate an array of FittingJob struct

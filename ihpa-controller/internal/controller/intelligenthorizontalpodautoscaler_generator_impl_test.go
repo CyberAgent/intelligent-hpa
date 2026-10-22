@@ -1327,6 +1327,130 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 	}
 }
 
+func TestForecastTarget(t *testing.T) {
+	t.Parallel()
+
+	sample1, sample2 := testIHPAGeneratorSample(t)
+	prometheus := &ihpaGeneratorImpl{
+		kubeSystemUID: "46f9e396-d3c4-4103-a807-49054f47bbfb",
+		scaleTargetRequests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("256Mi"),
+		},
+		ihpa: sample1.ihpa.DeepCopy(),
+	}
+	prometheus.ihpa.Spec.MetricProvider = ihpav1beta2.MetricProvider{
+		Name:           "prometheus",
+		ProviderSource: ihpav1beta2.ProviderSource{Prometheus: &ihpav1beta2.PrometheusProviderSource{URL: "http://prometheus:9090"}},
+	}
+
+	tests := map[string]struct {
+		generator *ihpaGeneratorImpl
+		metric    *autoscalingv2.MetricSpec
+		expected  forecastTarget
+		wantErr   bool
+	}{
+		"success: utilization of cpu is converted by the requests": {
+			generator: sample1,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "Resource",
+				Resource: &autoscalingv2.ResourceMetricSource{
+					Name:   "cpu",
+					Target: autoscalingv2.MetricTarget{Type: "Utilization", AverageUtilization: new(int32(30))},
+				},
+			},
+			expected: forecastTarget{
+				MetricName: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
+				Labels: map[string]string{
+					"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+					"kube_namespace":  "default",
+					"kube_deployment": "nginx",
+				},
+				AverageValue: *resource.NewQuantity(150000000, resource.DecimalSI),
+			},
+		},
+		"success: utilization of memory on prometheus": {
+			generator: prometheus,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "Resource",
+				Resource: &autoscalingv2.ResourceMetricSource{
+					Name:   "memory",
+					Target: autoscalingv2.MetricTarget{Type: "Utilization", AverageUtilization: new(int32(50))},
+				},
+			},
+			expected: forecastTarget{
+				MetricName: "ake.ihpa.forecasted_container_memory_working_set_bytes",
+				Labels: map[string]string{
+					"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+					"kube_namespace":  "default",
+					"kube_deployment": "nginx",
+				},
+				AverageValue: *resource.NewQuantity(134217728, resource.DecimalSI),
+			},
+		},
+		"success: average value of an external metric is passed through": {
+			generator: sample2,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "External",
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{Name: "nginx.net.request_per_s"},
+					Target: autoscalingv2.MetricTarget{Type: "AverageValue", AverageValue: resource.NewQuantity(100, resource.DecimalSI)},
+				},
+			},
+			expected: forecastTarget{
+				MetricName: "ake.ihpa.forecasted_nginx_net_request_per_s",
+				Labels: map[string]string{
+					"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+					"kube_namespace":   "web",
+					"kube_statefulset": "web-db",
+				},
+				AverageValue: *resource.NewQuantity(100, resource.DecimalSI),
+			},
+		},
+		"fail: the requests of the resource are missing": {
+			generator: prometheus,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "Resource",
+				Resource: &autoscalingv2.ResourceMetricSource{
+					Name:   "cpu",
+					Target: autoscalingv2.MetricTarget{Type: "Utilization", AverageUtilization: new(int32(30))},
+				},
+			},
+			wantErr: true,
+		},
+		"fail: the type of the metric is unsupported": {
+			generator: sample1,
+			metric:    &autoscalingv2.MetricSpec{Type: "ContainerResource"},
+			wantErr:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := tt.generator.forecastTarget(tt.metric)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("forecastTarget() = %v, want an error", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.MetricName != tt.expected.MetricName {
+				t.Errorf("MetricName = %s, want %s", got.MetricName, tt.expected.MetricName)
+			}
+			if !reflect.DeepEqual(got.Labels, tt.expected.Labels) {
+				t.Errorf("Labels = %v, want %v", got.Labels, tt.expected.Labels)
+			}
+			if got.AverageValue.Cmp(tt.expected.AverageValue) != 0 {
+				t.Errorf("AverageValue = %s, want %s", got.AverageValue.String(), tt.expected.AverageValue.String())
+			}
+		})
+	}
+}
+
 func TestConvertMetricSpecToIdentifier(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
 	tests := []struct {

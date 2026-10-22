@@ -69,9 +69,9 @@ type IntelligentHorizontalPodAutoscalerReconciler struct {
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
-//nolint:gocyclo // TODO: Reconcile will be reworked for the KEDA support (https://github.com/cycloud-io/intelligent-hpa/issues/10), so splitting it now would only conflict with that change.
 func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("intelligenthorizontalpodautoscaler", req.NamespacedName)
+	ctx = ctrl.LoggerInto(ctx, log)
 	ihpaNamespacedName := req.String()
 
 	var ihpa ihpav1beta2.IntelligentHorizontalPodAutoscaler
@@ -92,10 +92,26 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		return ctrl.Result{}, fmt.Errorf("failed to create ihpa manager: %w", err)
 	}
 
+	if err := r.reconcileAutoscaler(ctx, g); err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := r.reconcileForecastPipeline(ctx, g, &ihpa, ihpaNamespacedName); err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := r.reconcileInventory(ctx, g); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// reconcileAutoscaler creates or updates the resource that scales the target workload.
+func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx context.Context, g IntelligentHorizontalPodAutoscalerGenerator) error {
+	log := ctrl.LoggerFrom(ctx)
 	// * create/update hpa resource
 	hpaResource, err := g.HorizontalPodAutoscalerResource()
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to generate hpa resource: %w", err)
+		return fmt.Errorf("failed to generate hpa resource: %w", err)
 	}
 
 	// Convert HPA to unstructured for autoscaling/v2 compatibility
@@ -113,7 +129,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		log.V(ResourceMessageLogLevel).Info("initialize hpa", "name", hpaResource.GetName())
 		objMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(hpaResource)
 		if convErr != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to convert hpa to unstructured: %w", convErr)
+			return fmt.Errorf("failed to convert hpa to unstructured: %w", convErr)
 		}
 		hpaUnstructured = &unstructured.Unstructured{Object: objMap}
 		hpaUnstructured.SetGroupVersionKind(schema.GroupVersionKind{
@@ -122,33 +138,41 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 			Kind:    "HorizontalPodAutoscaler",
 		})
 		if err := r.Create(ctx, hpaUnstructured); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to create hpa: %w", err)
+			return fmt.Errorf("failed to create hpa: %w", err)
 		}
 	} else if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to get hpa: %w", err)
+		return fmt.Errorf("failed to get hpa: %w", err)
 	} else {
 		specMap, convErr := runtime.DefaultUnstructuredConverter.ToUnstructured(&hpaResource.Spec)
 		if convErr != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to convert hpa spec to unstructured: %w", convErr)
+			return fmt.Errorf("failed to convert hpa spec to unstructured: %w", convErr)
 		}
 		hpaUnstructured.Object["spec"] = specMap
 		if err := r.Update(ctx, hpaUnstructured); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to update hpa: %w", err)
+			return fmt.Errorf("failed to update hpa: %w", err)
 		}
 	}
 	log.V(ResourceMessageLogLevel).Info("successed to create/update hpa", "kind", hpaUnstructured.GetObjectKind().GroupVersionKind(), "name", hpaUnstructured.GetName())
+	return nil
+}
 
+// reconcileForecastPipeline creates or updates the resources that generate and send the forecasted metrics,
+// and deletes the ones of metrics which are removed from the IHPA.
+//
+//nolint:gocyclo // This is a move of the former Reconcile as it was, so splitting it further is left out of the KEDA support.
+func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileForecastPipeline(ctx context.Context, g IntelligentHorizontalPodAutoscalerGenerator, ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler, ihpaNamespacedName string) error {
+	log := ctrl.LoggerFrom(ctx)
 	// * create rbac resources
 	saResource, roleResource, roleBindingResource, err := g.RBACResources()
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to generate rbac resource: %w", err)
+		return fmt.Errorf("failed to generate rbac resource: %w", err)
 	}
 	sa := &corev1.ServiceAccount{}
 	if err := r.Get(ctx, types.NamespacedName{Namespace: saResource.GetNamespace(), Name: saResource.GetName()}, sa); apierrors.IsNotFound(err) {
 		log.V(ResourceMessageLogLevel).Info("initialize serviceAccount", "name", saResource.GetName())
 		sa = saResource.DeepCopy()
 		if err := r.Create(ctx, sa); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to create serviceAccount: %w", err)
+			return fmt.Errorf("failed to create serviceAccount: %w", err)
 		}
 	}
 	role := &rbacv1.Role{}
@@ -156,7 +180,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		log.V(ResourceMessageLogLevel).Info("initialize role", "name", roleResource.GetName())
 		role = roleResource.DeepCopy()
 		if err := r.Create(ctx, role); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to create role: %w", err)
+			return fmt.Errorf("failed to create role: %w", err)
 		}
 	}
 	roleBinding := &rbacv1.RoleBinding{}
@@ -164,14 +188,14 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		log.V(ResourceMessageLogLevel).Info("initialize roleBinding", "name", roleBindingResource.GetName())
 		roleBinding = roleBindingResource.DeepCopy()
 		if err := r.Create(ctx, roleBinding); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to create roleBinding: %w", err)
+			return fmt.Errorf("failed to create roleBinding: %w", err)
 		}
 	}
 
 	// * create fittingjob resources
 	fittingJobResources, err := g.FittingJobResources()
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to generate fittingjob resources: %w", err)
+		return fmt.Errorf("failed to generate fittingjob resources: %w", err)
 	}
 	for _, fjResource := range fittingJobResources {
 		fj := &ihpav1beta2.FittingJob{}
@@ -179,12 +203,12 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 			log.V(ResourceMessageLogLevel).Info("initialize fittingjob", "name", fjResource.GetName())
 			fj = fjResource.DeepCopy()
 			if err := r.Create(ctx, fj); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to create fittingjob: %w", err)
+				return fmt.Errorf("failed to create fittingjob: %w", err)
 			}
 		} else {
 			fj.Spec = fjResource.DeepCopy().Spec
 			if err := r.Update(ctx, fj); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to update fittingjob: %w", err)
+				return fmt.Errorf("failed to update fittingjob: %w", err)
 			}
 		}
 		log.V(ResourceMessageLogLevel).Info("successed to create/update fittingjob", "kind", fj.GetObjectKind().GroupVersionKind(), "name", fj.GetName())
@@ -193,7 +217,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 	// * create estimator resources
 	estimatorResources, err := g.EstimatorResources()
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to generate estimator resources: %w", err)
+		return fmt.Errorf("failed to generate estimator resources: %w", err)
 	}
 	for _, estResource := range estimatorResources {
 		est := &ihpav1beta2.Estimator{}
@@ -201,12 +225,12 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 			log.V(ResourceMessageLogLevel).Info("initialize estimator", "name", estResource.GetName())
 			est = estResource.DeepCopy()
 			if err := r.Create(ctx, est); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to create estimator: %w", err)
+				return fmt.Errorf("failed to create estimator: %w", err)
 			}
 		} else {
 			est.Spec = estResource.DeepCopy().Spec
 			if err := r.Update(ctx, est); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to update estimator: %w", err)
+				return fmt.Errorf("failed to update estimator: %w", err)
 			}
 		}
 		log.V(ResourceMessageLogLevel).Info("successed to create/update estimator", "kind", est.GetObjectKind().GroupVersionKind(), "name", est.GetName())
@@ -240,13 +264,13 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 
 		var fjs ihpav1beta2.FittingJobList
 		if err := r.List(ctx, &fjs); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to get list of fittingjobs: %w", err)
+			return fmt.Errorf("failed to get list of fittingjobs: %w", err)
 		}
 		for _, fj := range fjs.Items {
 			if id, ok := fj.GetAnnotations()[fittingJobIDAnnotation]; ok {
 				if _, ok := deleteIds[id]; ok {
 					if err := r.Delete(ctx, &fj); err != nil {
-						return ctrl.Result{}, fmt.Errorf("failed to delete fittingjob: %w", err)
+						return fmt.Errorf("failed to delete fittingjob: %w", err)
 					}
 					log.V(ResourceMessageLogLevel).Info("successed to delete fitting job", "kind", fj.GetObjectKind(), "name", fj.GetName(), "id", id)
 				}
@@ -255,13 +279,13 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 
 		var ests ihpav1beta2.EstimatorList
 		if err := r.List(ctx, &ests); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to get list of estimators: %w", err)
+			return fmt.Errorf("failed to get list of estimators: %w", err)
 		}
 		for _, est := range ests.Items {
 			if id, ok := est.GetAnnotations()[fittingJobIDAnnotation]; ok {
 				if _, ok := deleteIds[id]; ok {
 					if err := r.Delete(ctx, &est); err != nil {
-						return ctrl.Result{}, fmt.Errorf("failed to delete estimator: %w", err)
+						return fmt.Errorf("failed to delete estimator: %w", err)
 					}
 					log.V(ResourceMessageLogLevel).Info("successed to delete estimator", "kind", est.GetObjectKind(), "name", est.GetName(), "id", id)
 				}
@@ -282,33 +306,37 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 	fjIdsStr = strings.TrimRight(fjIdsStr, ",")
 	annotations[fittingJobIDsAnnotation] = fjIdsStr
 	ihpa.SetAnnotations(annotations)
-	if err := r.Update(ctx, &ihpa); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to update ihpa resource: %w", err)
+	if err := r.Update(ctx, ihpa); err != nil {
+		return fmt.Errorf("failed to update ihpa resource: %w", err)
 	}
 	log.V(ResourceMessageLogLevel).Info("successed to apply annotation", "annotation", fittingJobIDsAnnotation, "value", fjIdsStr)
+	return nil
+}
 
+// reconcileInventory keeps the ConfigMap that lets users find the generated resources, as the IHPA has no status field for them.
+func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileInventory(ctx context.Context, g IntelligentHorizontalPodAutoscalerGenerator) error {
+	log := ctrl.LoggerFrom(ctx)
 	// * create/update status configmap
 	statusCM, err := g.StatusConfigMapResource()
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to generate status configmap: %w", err)
+		return fmt.Errorf("failed to generate status configmap: %w", err)
 	}
 	existingCM := &corev1.ConfigMap{}
 	if err := r.Get(ctx, types.NamespacedName{Namespace: statusCM.GetNamespace(), Name: statusCM.GetName()}, existingCM); apierrors.IsNotFound(err) {
 		log.V(ResourceMessageLogLevel).Info("initialize status configmap", "name", statusCM.GetName())
 		if err := r.Create(ctx, statusCM); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to create status configmap: %w", err)
+			return fmt.Errorf("failed to create status configmap: %w", err)
 		}
 	} else if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to get status configmap: %w", err)
+		return fmt.Errorf("failed to get status configmap: %w", err)
 	} else {
 		existingCM.Data = statusCM.Data
 		if err := r.Update(ctx, existingCM); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to update status configmap: %w", err)
+			return fmt.Errorf("failed to update status configmap: %w", err)
 		}
 	}
 	log.V(ResourceMessageLogLevel).Info("successed to create/update status configmap", "name", statusCM.GetName())
-
-	return ctrl.Result{}, nil
+	return nil
 }
 
 func (r *IntelligentHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {

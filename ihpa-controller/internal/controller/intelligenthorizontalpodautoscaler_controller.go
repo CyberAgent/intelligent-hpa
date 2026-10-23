@@ -20,20 +20,27 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
+	// unusedBackendDeletionPollInterval is the interval to check whether the resource of the other backend is gone.
+	unusedBackendDeletionPollInterval = 5 * time.Second
+
 	annotationPrefix        = "ihpa.ake.cyberagent.co.jp"
 	fittingJobIDAnnotation  = annotationPrefix + "/fittingjob-id"
 	fittingJobIDsAnnotation = annotationPrefix + "/fittingjob-ids"
@@ -91,8 +98,8 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		return ctrl.Result{}, fmt.Errorf("failed to create ihpa manager: %w", err)
 	}
 
-	if err := r.reconcileAutoscaler(ctx, g, &ihpa); err != nil {
-		return ctrl.Result{}, err
+	if result, err := r.reconcileAutoscaler(ctx, g, &ihpa); err != nil || !result.IsZero() {
+		return result, err
 	}
 	if err := r.reconcileForecastPipeline(ctx, g, &ihpa, ihpaNamespacedName); err != nil {
 		return ctrl.Result{}, err
@@ -104,18 +111,20 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 	return ctrl.Result{}, nil
 }
 
-// reconcileAutoscaler creates or updates the resource that scales the target workload.
-func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx context.Context, g IntelligentHorizontalPodAutoscalerGenerator, ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler) error {
+// reconcileAutoscaler creates or updates the resource that scales the target workload,
+// after deleting the resource of the other backend because two autoscalers must not control the same workload.
+// It asks to be called again while the resource of the other backend is being deleted.
+func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx context.Context, g IntelligentHorizontalPodAutoscalerGenerator, ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	backend, err := newScalingBackend(ihpa, g)
 	if err != nil {
-		return err
+		return ctrl.Result{}, err
 	}
 	gvk := backend.GroupVersionKind()
 
 	autoscaler, err := backend.Build()
 	if err != nil {
-		return fmt.Errorf("failed to generate %s resource: %w", gvk.Kind, err)
+		return ctrl.Result{}, fmt.Errorf("failed to generate %s resource: %w", gvk.Kind, err)
 	}
 
 	// Both backends are applied as unstructured by their GroupVersionKind, so that one code path serves them.
@@ -124,29 +133,85 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx c
 	// (K8s 1.25+ removed autoscaling/v2beta2, so we use autoscaling/v2)
 	objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(autoscaler)
 	if err != nil {
-		return fmt.Errorf("failed to convert %s to unstructured: %w", gvk.Kind, err)
+		return ctrl.Result{}, fmt.Errorf("failed to convert %s to unstructured: %w", gvk.Kind, err)
 	}
 	desired := &unstructured.Unstructured{Object: objMap}
 	desired.SetGroupVersionKind(gvk)
 
+	// The target kind is looked up before deleting the unused backend,
+	// because the workload must not lose its autoscaler when the target backend cannot be used, such as KEDA not being installed.
 	current := &unstructured.Unstructured{}
 	current.SetGroupVersionKind(gvk)
-	if err := r.Get(ctx, client.ObjectKeyFromObject(desired), current); apierrors.IsNotFound(err) {
+	getErr := r.Get(ctx, client.ObjectKeyFromObject(desired), current)
+	if getErr != nil && !apierrors.IsNotFound(getErr) {
+		return ctrl.Result{}, fmt.Errorf("failed to get %s: %w", gvk.Kind, getErr)
+	}
+
+	deleting, err := r.deleteControlledResource(ctx, ihpa, unusedBackendGVK(gvk), client.ObjectKeyFromObject(desired))
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if deleting {
+		return ctrl.Result{RequeueAfter: unusedBackendDeletionPollInterval}, nil
+	}
+
+	if apierrors.IsNotFound(getErr) {
 		log.V(ResourceMessageLogLevel).Info("initialize autoscaler", "kind", gvk.Kind, "name", desired.GetName())
 		if err := r.Create(ctx, desired); err != nil {
-			return fmt.Errorf("failed to create %s: %w", gvk.Kind, err)
+			return ctrl.Result{}, fmt.Errorf("failed to create %s: %w", gvk.Kind, err)
 		}
 		current = desired
-	} else if err != nil {
-		return fmt.Errorf("failed to get %s: %w", gvk.Kind, err)
 	} else {
+		// Updating the spec cannot cancel the deletion, e.g. when a switch of the backend is reverted at once,
+		// so wait for the deletion and create it again.
+		if current.GetDeletionTimestamp() != nil {
+			log.V(LogicMessageLogLevel).Info("wait for the autoscaler being deleted", "kind", gvk.Kind, "name", current.GetName())
+			return ctrl.Result{RequeueAfter: unusedBackendDeletionPollInterval}, nil
+		}
 		current.Object["spec"] = desired.Object["spec"]
 		if err := r.Update(ctx, current); err != nil {
-			return fmt.Errorf("failed to update %s: %w", gvk.Kind, err)
+			return ctrl.Result{}, fmt.Errorf("failed to update %s: %w", gvk.Kind, err)
 		}
 	}
 	log.V(ResourceMessageLogLevel).Info("successed to create/update autoscaler", "kind", gvk.Kind, "name", current.GetName())
-	return nil
+	return ctrl.Result{}, nil
+}
+
+// deleteControlledResource deletes the resource if the IHPA controls it, and reports whether it is still being deleted.
+// A resource of the kind that the cluster does not have, such as a ScaledObject without KEDA, is regarded as deleted.
+// A resource that the IHPA does not control is left as it is, because it belongs to someone else.
+func (r *IntelligentHorizontalPodAutoscalerReconciler) deleteControlledResource(ctx context.Context, ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler, gvk schema.GroupVersionKind, key types.NamespacedName) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(gvk)
+	if err := r.Get(ctx, key, obj); apierrors.IsNotFound(err) || meta.IsNoMatchError(err) {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("failed to get %s: %w", gvk.Kind, err)
+	}
+
+	if !metav1.IsControlledBy(obj, ihpa) {
+		log.V(LogicMessageLogLevel).Info("skip deleting the resource which the IHPA does not control", "kind", gvk.Kind, "name", key.Name)
+		return false, nil
+	}
+	if obj.GetDeletionTimestamp() == nil {
+		// The precondition binds the deletion to the checked resource,
+		// so a replacement of the same name created by someone else in the meantime is not deleted.
+		if err := r.Delete(ctx, obj, client.Preconditions{UID: new(obj.GetUID())}); client.IgnoreNotFound(err) != nil {
+			return false, fmt.Errorf("failed to delete %s: %w", gvk.Kind, err)
+		}
+		log.V(ResourceMessageLogLevel).Info("successed to delete the resource of the other backend", "kind", gvk.Kind, "name", key.Name)
+	}
+
+	// A ScaledObject is not deleted at once because KEDA has a finalizer on it.
+	// Its deletion is polled by RequeueAfter instead of watched, because registering Owns(ScaledObject)
+	// makes the manager fail to start on a cluster without KEDA, which must keep working in HPA mode.
+	if err := r.Get(ctx, key, obj); apierrors.IsNotFound(err) {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("failed to get %s: %w", gvk.Kind, err)
+	}
+	return true, nil
 }
 
 // reconcileForecastPipeline creates or updates the resources that generate and send the forecasted metrics,
@@ -335,6 +400,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileInventory(ctx co
 func (r *IntelligentHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.fittingJobMap = make(map[string]map[string]struct{})
 
+	// Owns(ScaledObject) is not registered, see deleteControlledResource.
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ihpav1beta2.IntelligentHorizontalPodAutoscaler{}).
 		Complete(r)

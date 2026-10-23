@@ -78,9 +78,10 @@ func main() {
 	}
 
 	if err = (&controller.IntelligentHorizontalPodAutoscalerReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("IntelligentHorizontalPodAutoscaler"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("IntelligentHorizontalPodAutoscaler"),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorder("ihpa-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IntelligentHorizontalPodAutoscaler")
 		os.Exit(1)

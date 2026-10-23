@@ -2,7 +2,10 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
@@ -16,13 +19,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func newReconcilerForTest(t *testing.T, objs ...client.Object) *IntelligentHorizontalPodAutoscalerReconciler {
@@ -40,6 +46,7 @@ func newReconcilerForTest(t *testing.T, objs ...client.Object) *IntelligentHoriz
 		Client:        fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build(),
 		Log:           zap.New(zap.UseDevMode(true)),
 		Scheme:        scheme,
+		Recorder:      events.NewFakeRecorder(10),
 		fittingJobMap: make(map[string]map[string]struct{}),
 	}
 }
@@ -193,6 +200,15 @@ func newScaledObjectForTest(ownerUID types.UID, finalizers ...string) *unstructu
 	return so
 }
 
+func nextEventForTest(r *IntelligentHorizontalPodAutoscalerReconciler) string {
+	select {
+	case e := <-r.Recorder.(*events.FakeRecorder).Events:
+		return e
+	default:
+		return ""
+	}
+}
+
 func reconcileResultForTest(r *IntelligentHorizontalPodAutoscalerReconciler) (ctrl.Result, error) {
 	return r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "nginx"}})
 }
@@ -209,6 +225,74 @@ func scaledObjectMaxReplicasForTest(t *testing.T, r *IntelligentHorizontalPodAut
 		t.Fatal(err)
 	}
 	return got
+}
+
+func TestReportFailure(t *testing.T) {
+	t.Parallel()
+
+	conflict := apierrors.NewConflict(schema.GroupResource{Group: "keda.sh", Resource: "scaledobjects"}, "nginx", errors.New("the object has been modified"))
+	tests := map[string]struct {
+		err            error
+		expectTerminal bool
+		expectRequeue  bool
+		expectEvent    string
+	}{
+		"success: unsupported metric provider is terminal": {err: fmt.Errorf("failed to generate: %w", errUnsupportedMetricProvider), expectTerminal: true, expectEvent: "Warning UnsupportedMetricProvider "},
+		"success: ScaledObject name too long is terminal":  {err: fmt.Errorf("failed to generate: %w", errScaledObjectNameTooLong), expectTerminal: true, expectEvent: "Warning ScaledObjectNameTooLong "},
+		"success: KEDA is not installed is terminal":       {err: fmt.Errorf("%w: no matches", errKEDANotInstalled), expectTerminal: true, expectEvent: "Warning KEDANotInstalled "},
+		"success: conflict is requeued without an event":   {err: fmt.Errorf("failed to update ScaledObject: %w", conflict), expectRequeue: true},
+		"success: other errors are retried with backoff":   {err: errors.New("connection refused"), expectEvent: "Warning ReconcileFailed "},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			r := newReconcilerForTest(t)
+
+			result, err := r.reportFailure(r.Log, testReconcileIHPA(corev1.ResourceCPU), tt.err)
+
+			if got := errors.Is(err, reconcile.TerminalError(nil)); got != tt.expectTerminal {
+				t.Errorf("terminal = %t, want %t (err = %v)", got, tt.expectTerminal, err)
+			}
+			if tt.expectRequeue {
+				if err != nil || result.RequeueAfter != conflictRetryInterval {
+					t.Errorf("result = %v, err = %v, want a requeue without an error", result, err)
+				}
+			} else if err == nil {
+				t.Error("err = nil, want an error")
+			}
+			got := nextEventForTest(r)
+			if tt.expectEvent == "" && got != "" || !strings.HasPrefix(got, tt.expectEvent) {
+				t.Errorf("event = %q, want prefix %q", got, tt.expectEvent)
+			}
+		})
+	}
+}
+
+func TestEventReason(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err      error
+		expected string
+	}{
+		"success: unsupported metric provider":   {err: fmt.Errorf("failed to generate: %w", errUnsupportedMetricProvider), expected: "UnsupportedMetricProvider"},
+		"success: ScaledObject name too long":    {err: fmt.Errorf("failed to generate: %w", errScaledObjectNameTooLong), expected: "ScaledObjectNameTooLong"},
+		"success: KEDA is not installed":         {err: fmt.Errorf("%w: no matches", errKEDANotInstalled), expected: "KEDANotInstalled"},
+		"success: resource of another owner":     {err: fmt.Errorf("ScaledObject is not deleted: %w", errNotControlled), expected: "ResourceNotControlled"},
+		"success: error without a specific kind": {err: errors.New("connection refused"), expected: "ReconcileFailed"},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := eventReason(tt.err); got != tt.expected {
+				t.Errorf("eventReason() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
 }
 
 func TestReconcile_HPAMode(t *testing.T) {
@@ -350,6 +434,23 @@ func TestReconcile_KEDAMode(t *testing.T) {
 			t.Errorf("scaledobject maxReplicaCount = %d, want 10", got)
 		}
 	})
+
+	t.Run("fail: KEDA is not installed", func(t *testing.T) {
+		t.Parallel()
+
+		kubeSystem, deployment := testReconcileObjects()
+		r := newReconcilerForTest(t, kubeSystem, deployment, testReconcileKEDAIHPA())
+		uninstallKEDAForTest(r)
+
+		_, err := reconcileResultForTest(r)
+
+		if !errors.Is(err, errKEDANotInstalled) {
+			t.Fatalf("Reconcile() error = %v, want %v", err, errKEDANotInstalled)
+		}
+		if got := nextEventForTest(r); !strings.HasPrefix(got, "Warning KEDANotInstalled ") {
+			t.Errorf("event = %q, want a Warning KEDANotInstalled", got)
+		}
+	})
 }
 
 //nolint:gocyclo // Each subtest is an independent scenario of the switch, and gocyclo sums up the branches of all of them.
@@ -404,6 +505,9 @@ func TestReconcile_SwitchBackend(t *testing.T) {
 
 		if !scaledObjectExistsForTest(r) {
 			t.Error("scaledobject of other owner is deleted, want it kept")
+		}
+		if got := nextEventForTest(r); !strings.HasPrefix(got, "Warning ResourceNotControlled ") {
+			t.Errorf("event = %q, want a Warning ResourceNotControlled", got)
 		}
 	})
 
@@ -528,6 +632,27 @@ func TestReconcile_SwitchBackend(t *testing.T) {
 			t.Error("scaledobject is still the one being deleted, want a new one")
 		}
 	})
+
+	t.Run("fail: keeps the HPA when KEDA is not installed", func(t *testing.T) {
+		t.Parallel()
+
+		kubeSystem, deployment := testReconcileObjects()
+		ihpa := testReconcileKEDAIHPA()
+		ihpa.Spec.ScaleBackend.Type = ihpav1beta2.ScaleBackendHPA
+		r := newReconcilerForTest(t, kubeSystem, deployment, ihpa)
+		reconcileForTest(t, r)
+		uninstallKEDAForTest(r)
+		setScaleBackendTypeForTest(t, r, ihpav1beta2.ScaleBackendKEDA)
+
+		_, err := reconcileResultForTest(r)
+
+		if !errors.Is(err, errKEDANotInstalled) {
+			t.Errorf("Reconcile() error = %v, want %v", err, errKEDANotInstalled)
+		}
+		if !hpaExistsForTest(r) {
+			t.Error("hpa is deleted, want it kept while KEDA is not installed")
+		}
+	})
 }
 
 func TestReconcile_ForecastPipeline(t *testing.T) {
@@ -587,5 +712,17 @@ func TestReconcile_ForecastPipeline(t *testing.T) {
 		if _, ok := r.fittingJobMap["default/nginx"]; ok {
 			t.Errorf("fittingJobMap = %v, want no entry for default/nginx", r.fittingJobMap)
 		}
+	})
+}
+
+func TestRecordWarning(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success: does nothing without a recorder", func(t *testing.T) {
+		t.Parallel()
+
+		r := &IntelligentHorizontalPodAutoscalerReconciler{}
+
+		r.recordWarning(testReconcileIHPA(corev1.ResourceCPU), "ReconcileFailed", "message")
 	})
 }

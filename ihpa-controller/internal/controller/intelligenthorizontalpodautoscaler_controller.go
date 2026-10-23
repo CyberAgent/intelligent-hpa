@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -33,13 +34,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
 	// unusedBackendDeletionPollInterval is the interval to check whether the resource of the other backend is gone.
 	unusedBackendDeletionPollInterval = 5 * time.Second
+
+	// conflictRetryInterval gives the cache time to catch up with the write that caused a Conflict.
+	conflictRetryInterval = time.Second
 
 	annotationPrefix        = "ihpa.ake.cyberagent.co.jp"
 	fittingJobIDAnnotation  = annotationPrefix + "/fittingjob-id"
@@ -49,11 +55,19 @@ const (
 	LogicMessageLogLevel    = 1
 )
 
+var (
+	// These sentinels are told apart by eventReason, so that users can see the cause in the Events of the IHPA.
+	errKEDANotInstalled = errors.New("the ScaledObject kind is not found, KEDA may not be installed")
+	// errNotControlled tells that a resource of the same name is not controlled by the IHPA, so the IHPA leaves it.
+	errNotControlled = errors.New("the resource is not controlled by the IHPA")
+)
+
 // IntelligentHorizontalPodAutoscalerReconciler reconciles a IntelligentHorizontalPodAutoscaler object
 type IntelligentHorizontalPodAutoscalerReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Recorder events.EventRecorder
 
 	// fittingJobMap is used for cleanup all fittingjob when ihpa resource is deleted.
 	// Any fittingjob can be deleted when some ihpa metric field is deleted because of comparison fittingJobIDsAnnotation,
@@ -63,6 +77,8 @@ type IntelligentHorizontalPodAutoscalerReconciler struct {
 
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=intelligenthorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=intelligenthorizontalpodautoscalers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=keda.sh,resources=scaledobjects,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch;update
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/status,verbs=get
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list
@@ -98,17 +114,68 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		return ctrl.Result{}, fmt.Errorf("failed to create ihpa manager: %w", err)
 	}
 
-	if result, err := r.reconcileAutoscaler(ctx, g, &ihpa); err != nil || !result.IsZero() {
-		return result, err
+	result, err := r.reconcileAutoscaler(ctx, g, &ihpa)
+	if err != nil {
+		return r.reportFailure(log, &ihpa, err)
+	}
+	if !result.IsZero() {
+		return result, nil
 	}
 	if err := r.reconcileForecastPipeline(ctx, g, &ihpa, ihpaNamespacedName); err != nil {
-		return ctrl.Result{}, err
+		return r.reportFailure(log, &ihpa, err)
 	}
 	if err := r.reconcileInventory(ctx, g); err != nil {
-		return ctrl.Result{}, err
+		return r.reportFailure(log, &ihpa, err)
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// reportFailure records the error of a step as a Warning Event of the IHPA and a log, and decides how to retry it.
+//
+// An error that retrying cannot resolve is terminal, so it is not retried with backoff forever.
+// The IHPA is reconciled again by a change of it or by the resync, but not by installing KEDA, because the controller
+// does not watch the CRD. Watching it to recover at once is not worth the cost of requiring the ScaledObject kind at startup.
+//
+// A Conflict is not a failure but a stale cache, so it is requeued without an Event.
+func (r *IntelligentHorizontalPodAutoscalerReconciler) reportFailure(log logr.Logger, ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler, err error) (ctrl.Result, error) {
+	if apierrors.IsConflict(err) {
+		log.V(LogicMessageLogLevel).Info("requeue because of a conflict", "error_message", err)
+		return ctrl.Result{RequeueAfter: conflictRetryInterval}, nil
+	}
+	log.Error(err, "failed to reconcile")
+	r.recordWarning(ihpa, eventReason(err), err.Error())
+	if isTerminal(err) {
+		return ctrl.Result{}, reconcile.TerminalError(err)
+	}
+	return ctrl.Result{}, err
+}
+
+// isTerminal reports whether the error cannot be resolved by retrying without a change of the IHPA or the cluster.
+func isTerminal(err error) bool {
+	return errors.Is(err, errKEDANotInstalled) || errors.Is(err, errUnsupportedMetricProvider) || errors.Is(err, errScaledObjectNameTooLong)
+}
+
+func (r *IntelligentHorizontalPodAutoscalerReconciler) recordWarning(ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler, reason, message string) {
+	if r.Recorder != nil {
+		r.Recorder.Eventf(ihpa, nil, corev1.EventTypeWarning, reason, "Reconcile", "%s", message)
+	}
+}
+
+// eventReason keeps the reasons a small fixed set so that users can filter Events by them, and leaves the details to the message.
+func eventReason(err error) string {
+	switch {
+	case errors.Is(err, errKEDANotInstalled):
+		return "KEDANotInstalled"
+	case errors.Is(err, errUnsupportedMetricProvider):
+		return "UnsupportedMetricProvider"
+	case errors.Is(err, errScaledObjectNameTooLong):
+		return "ScaledObjectNameTooLong"
+	case errors.Is(err, errNotControlled):
+		return "ResourceNotControlled"
+	default:
+		return "ReconcileFailed"
+	}
 }
 
 // reconcileAutoscaler creates or updates the resource that scales the target workload,
@@ -143,6 +210,9 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx c
 	current := &unstructured.Unstructured{}
 	current.SetGroupVersionKind(gvk)
 	getErr := r.Get(ctx, client.ObjectKeyFromObject(desired), current)
+	if meta.IsNoMatchError(getErr) && gvk == scaledObjectGVK {
+		return ctrl.Result{}, fmt.Errorf("%w: %w", errKEDANotInstalled, getErr)
+	}
 	if getErr != nil && !apierrors.IsNotFound(getErr) {
 		return ctrl.Result{}, fmt.Errorf("failed to get %s: %w", gvk.Kind, getErr)
 	}
@@ -192,6 +262,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) deleteControlledResource(
 
 	if !metav1.IsControlledBy(obj, ihpa) {
 		log.V(LogicMessageLogLevel).Info("skip deleting the resource which the IHPA does not control", "kind", gvk.Kind, "name", key.Name)
+		r.recordWarning(ihpa, eventReason(errNotControlled), fmt.Sprintf("%s %s is not deleted: %s", gvk.Kind, key.Name, errNotControlled))
 		return false, nil
 	}
 	if obj.GetDeletionTimestamp() == nil {

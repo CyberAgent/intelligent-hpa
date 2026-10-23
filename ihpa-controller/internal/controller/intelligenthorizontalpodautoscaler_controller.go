@@ -69,9 +69,10 @@ type IntelligentHorizontalPodAutoscalerReconciler struct {
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
+//nolint:gocyclo // TODO: Reconcile will be reworked for the KEDA support (https://github.com/cycloud-io/intelligent-hpa/issues/10), so splitting it now would only conflict with that change.
 func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("intelligenthorizontalpodautoscaler", req.NamespacedName)
-	ihpaNamespacedName := req.NamespacedName.String()
+	ihpaNamespacedName := req.String()
 
 	var ihpa ihpav1beta2.IntelligentHorizontalPodAutoscaler
 	if err := r.Get(ctx, req.NamespacedName, &ihpa); err != nil {
@@ -268,14 +269,14 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 		}
 
 		// unregister from estimator
-		for id, _ := range deleteIds {
+		for id := range deleteIds {
 			delete(r.fittingJobMap[ihpaNamespacedName], id)
 		}
 	}
 
 	// * update fittingjob ids annotation
 	var fjIdsStr string
-	for k, _ := range currentIds {
+	for k := range currentIds {
 		fjIdsStr += k + ","
 	}
 	fjIdsStr = strings.TrimRight(fjIdsStr, ",")
@@ -284,7 +285,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Con
 	if err := r.Update(ctx, &ihpa); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update ihpa resource: %w", err)
 	}
-	log.V(ResourceMessageLogLevel).Info("successed to apply annotation", fittingJobIDsAnnotation, fjIdsStr)
+	log.V(ResourceMessageLogLevel).Info("successed to apply annotation", "annotation", fittingJobIDsAnnotation, "value", fjIdsStr)
 
 	// * create/update status configmap
 	statusCM, err := g.StatusConfigMapResource()

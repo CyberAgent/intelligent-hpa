@@ -128,5 +128,5 @@ type FittingJobList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&FittingJob{}, &FittingJobList{})
+	registerTypes(&FittingJob{}, &FittingJobList{})
 }

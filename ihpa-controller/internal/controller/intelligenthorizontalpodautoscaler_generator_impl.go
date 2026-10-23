@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strings"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
@@ -65,8 +65,8 @@ func NewIntelligentHorizontalPodAutoscalerGenerator(
 	rl := *totalResourceList(containers)
 
 	// Resolve Datadog API/APP keys from Secrets/ConfigMaps if KeysFrom is specified
-	if ihpa.Spec.MetricProvider.ProviderSource.Datadog != nil && len(ihpa.Spec.MetricProvider.ProviderSource.Datadog.KeysFrom) > 0 {
-		if err := resolveDatadogKeysFromEnv(ctx, r.Client, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.ProviderSource.Datadog); err != nil {
+	if ihpa.Spec.MetricProvider.Datadog != nil && len(ihpa.Spec.MetricProvider.Datadog.KeysFrom) > 0 {
+		if err := resolveDatadogKeysFromEnv(ctx, r.Client, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.Datadog); err != nil {
 			return nil, fmt.Errorf("failed to resolve datadog keys from env: %w", err)
 		}
 	}
@@ -121,19 +121,19 @@ func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2.Ho
 	}
 
 	extendedMetrics := g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.Metrics
-	metrics := make([]autoscalingv2.MetricSpec, len(extendedMetrics))
+	baseMetrics := make([]autoscalingv2.MetricSpec, len(extendedMetrics))
 	for i := range extendedMetrics {
-		metrics[i] = *(extendedMetrics[i].MetricSpec())
+		baseMetrics[i] = *(extendedMetrics[i].MetricSpec())
 	}
-	forecastedMetrics := make([]autoscalingv2.MetricSpec, len(metrics))
-	for i := range metrics {
-		f, err := g.generateForecastedMetricSpec(&metrics[i])
+	metrics := make([]autoscalingv2.MetricSpec, 0, 2*len(baseMetrics))
+	metrics = append(metrics, baseMetrics...)
+	for i := range baseMetrics {
+		f, err := g.generateForecastedMetricSpec(&baseMetrics[i])
 		if err != nil {
 			return nil, err
 		}
-		forecastedMetrics[i] = *f
+		metrics = append(metrics, *f)
 	}
-	metrics = append(metrics, forecastedMetrics...)
 
 	hpa.Spec = autoscalingv2.HorizontalPodAutoscalerSpec{
 		ScaleTargetRef: *g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.ScaleTargetRef.DeepCopy(),
@@ -166,7 +166,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	// because this metric refer to metric server and
 	// we need whole value of this metric for calculation of utilization.
 	// Utilization is used by cpu, memory, storage and ephemeral-storage.
-	if metric.Type == "Resource" && metricTarget.Type == "Utilization" {
+	if metric.Type == autoscalingv2.ResourceMetricSourceType && metricTarget.Type == "Utilization" {
 		var avg int64
 
 		mp := mpconfig.ConvertMetricProvider(g.ihpa.Spec.MetricProvider.DeepCopy()).ActiveProvider()
@@ -209,7 +209,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 		}
 		// clear utilization field
 		metricTarget.AverageUtilization = nil
-	} else if metric.Type == "External" || metric.Type == "Object" || metric.Type == "Pods" {
+	} else if metric.Type == autoscalingv2.ExternalMetricSourceType || metric.Type == autoscalingv2.ObjectMetricSourceType || metric.Type == autoscalingv2.PodsMetricSourceType {
 		switch metricTarget.Type {
 		case "AverageValue":
 			avgValue = metricTarget.AverageValue.DeepCopy()
@@ -221,7 +221,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 
 	// forecasted value is single data point, but it expected to sum value,
 	// so we have to store the avg value to AverageValue field.
-	// (AverageValue must be devided by number of replicas.)
+	// (AverageValue must be divided by number of replicas.)
 	metricTarget.Type = "AverageValue"
 	metricTarget.AverageValue = &avgValue
 
@@ -231,7 +231,7 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	}
 
 	forecastedMetric := &autoscalingv2.MetricSpec{
-		Type:     "External",
+		Type:     autoscalingv2.ExternalMetricSourceType,
 		External: externalSource,
 	}
 
@@ -298,7 +298,7 @@ func (g *ihpaGeneratorImpl) fittingJobResource(metric *ihpav1beta2.ExtendedMetri
 func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricIdentifier, error) {
 	metricIdentifier := &autoscalingv2.MetricIdentifier{}
 	switch metric.Type {
-	case "Resource":
+	case autoscalingv2.ResourceMetricSourceType:
 		mp := mpconfig.ConvertMetricProvider(g.ihpa.Spec.MetricProvider.DeepCopy()).ActiveProvider()
 		mi := mp.ConvertResourceMetricName(metric.Resource.Name.String(), false)
 		if mi == nil {
@@ -308,14 +308,14 @@ func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2.
 
 		metricIdentifier.Name = mi.GetName()
 		metricIdentifier.Selector = &metav1.LabelSelector{MatchLabels: filters}
-	case "External":
+	case autoscalingv2.ExternalMetricSourceType:
 		metricIdentifier = metric.External.Metric.DeepCopy()
-	case "Object":
+	case autoscalingv2.ObjectMetricSourceType:
 		metricIdentifier = metric.Object.Metric.DeepCopy()
-	case "Pods":
+	case autoscalingv2.PodsMetricSourceType:
 		metricIdentifier = metric.Pods.Metric.DeepCopy()
 	default:
-		return nil, fmt.Errorf("%s metric is not supported yet.", metric.Type)
+		return nil, fmt.Errorf("%s metric is not supported yet", metric.Type)
 	}
 
 	return metricIdentifier, nil
@@ -355,12 +355,12 @@ func (g *ihpaGeneratorImpl) estimatorResource(metric *ihpav1beta2.ExtendedMetric
 	for k, v := range tagMap {
 		tags = append(tags, k+":"+v)
 	}
-	sort.Strings(tags)
+	slices.Sort(tags)
 
 	// search base tags
 	var baseMetricTags []string
 	for _, metric := range g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.Metrics {
-		if metric.Type != "External" {
+		if metric.Type != autoscalingv2.ExternalMetricSourceType {
 			continue
 		}
 		name, _ := extractScopedMetricInfo(metric.MetricSpec())
@@ -370,7 +370,7 @@ func (g *ihpaGeneratorImpl) estimatorResource(metric *ihpav1beta2.ExtendedMetric
 			for k, v := range m {
 				baseMetricTags = append(baseMetricTags, k+":"+v)
 			}
-			sort.Strings(baseMetricTags)
+			slices.Sort(baseMetricTags)
 			break
 		}
 	}
@@ -515,11 +515,10 @@ func (g *ihpaGeneratorImpl) uniqueMetricHash(metric *autoscalingv2.MetricSpec) [
 	targetName := g.ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.ScaleTargetRef.Name
 
 	h := md5.New()
-	io.WriteString(h, metricName)
-	io.WriteString(h, correspondForecastedMetricName(metricName))
-	io.WriteString(h, g.ihpa.GetNamespace())
-	io.WriteString(h, targetKind)
-	io.WriteString(h, targetName)
+	// hash.Hash.Write never returns an error
+	for _, s := range []string{metricName, correspondForecastedMetricName(metricName), g.ihpa.GetNamespace(), targetKind, targetName} {
+		_, _ = io.WriteString(h, s)
+	}
 	return h.Sum(nil)
 }
 

@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,12 +21,12 @@ func newTestScheme() *runtime.Scheme {
 func testEstimatorGeneratorSample(t *testing.T) *estimatorGeneratorImpl {
 	t.Helper()
 	sample1 := &estimatorGeneratorImpl{
-		est: &v1beta2.Estimator{
+		est: &ihpav1beta2.Estimator{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ihpa-sample1-cpu",
 				Namespace: "default",
 			},
-			Spec: v1beta2.EstimatorSpec{
+			Spec: ihpav1beta2.EstimatorSpec{
 				Mode:           "adjust",
 				GapMinutes:     10,
 				MetricName:     "test",
@@ -85,12 +84,12 @@ func TestEstimatorConfigMapResource(t *testing.T) {
 }
 
 func TestEstimatorGeneratorWithDifferentNamespace(t *testing.T) {
-	est := &v1beta2.Estimator{
+	est := &ihpav1beta2.Estimator{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ihpa-test-memory",
 			Namespace: "production",
 		},
-		Spec: v1beta2.EstimatorSpec{
+		Spec: ihpav1beta2.EstimatorSpec{
 			Mode:           "none",
 			GapMinutes:     5,
 			MetricName:     "memory-metric",

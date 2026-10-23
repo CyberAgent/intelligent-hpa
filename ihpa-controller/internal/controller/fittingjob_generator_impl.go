@@ -54,7 +54,7 @@ func (g *fittingJobGeneratorImpl) ConfigMapResource() (*corev1.ConfigMap, error)
 
 // CronJobResource generates an instance of CronJob (v1beta1)
 func (g *fittingJobGeneratorImpl) CronJobResource() (*batchv1beta1.CronJob, error) {
-	jobSpec := *g.fj.Spec.JobPatchSpec.GenerateJobSpec()
+	jobSpec := *g.fj.Spec.GenerateJobSpec()
 
 	volume := corev1.Volume{
 		Name: "fittingjob-config",

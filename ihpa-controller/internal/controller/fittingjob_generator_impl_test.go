@@ -278,7 +278,7 @@ func TestFittingJobConfigMapResource(t *testing.T) {
 		}
 
 		configName := "config.json"
-		var gotConfig, expConfig interface{}
+		var gotConfig, expConfig any
 		if err := json.Unmarshal([]byte(got.Data[configName]), &gotConfig); err != nil {
 			t.Fatalf("got data cannot be unmarshal (got=%v): %v", got.Data[configName], err)
 		}

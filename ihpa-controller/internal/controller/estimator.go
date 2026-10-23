@@ -2,11 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"math"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -104,8 +105,7 @@ func (q *PastEstimateDatumQueue) peek() *EstimateDatum {
 	if len(*q) == 0 {
 		return nil
 	}
-	var d EstimateDatum
-	d = (*q)[0]
+	d := (*q)[0]
 	return &d
 }
 func (q *PastEstimateDatumQueue) seekByUnixTime(u int64) *EstimateDatum {
@@ -159,41 +159,38 @@ func (currEd *EstimateDatum) adjustYHat(prevEd *EstimateDatum, actualValue float
 func estimatorHandler(opeCh <-chan *EstimateOperation, log logr.Logger) {
 	log.V(LogicMessageLogLevel).Info("start estimator handler")
 	estimateTargets := make([]EstimateTarget, 0, EstimateTargetsBuffer)
-	for {
-		select {
-		case ope := <-opeCh:
-			switch ope.Operator {
-			case EstimateAdd:
-				et := ope.Target
-				log.V(LogicMessageLogLevel).Info("create estimator", "id", et.ID)
-				et.estimatorStopCh = make(chan struct{})
-				et.Logger = log
-				go et.estimator()
-				estimateTargets = append(estimateTargets, et)
+	for ope := range opeCh {
+		switch ope.Operator {
+		case EstimateAdd:
+			et := ope.Target
+			log.V(LogicMessageLogLevel).Info("create estimator", "id", et.ID)
+			et.estimatorStopCh = make(chan struct{})
+			et.Logger = log
+			go et.estimator()
+			estimateTargets = append(estimateTargets, et)
 
-			case EstimateUpdate:
-				patch := ope.Patch
-				log.V(LogicMessageLogLevel).Info("update estimator", "id", patch.ID)
-				for i, et := range estimateTargets {
-					if et.ID == patch.ID {
-						if err := et.updateEstimateTarget(patch); err != nil {
-							log.V(LogicMessageLogLevel).Info("update estimator error", "error_msg", err)
-						}
-						estimateTargets[i] = et
-						// break search loop, not handler loop
-						break
+		case EstimateUpdate:
+			patch := ope.Patch
+			log.V(LogicMessageLogLevel).Info("update estimator", "id", patch.ID)
+			for i, et := range estimateTargets {
+				if et.ID == patch.ID {
+					if err := et.updateEstimateTarget(patch); err != nil {
+						log.V(LogicMessageLogLevel).Info("update estimator error", "error_msg", err)
 					}
+					estimateTargets[i] = et
+					// break search loop, not handler loop
+					break
 				}
+			}
 
-			case EstimateRemove:
-				for i, et := range estimateTargets {
-					if et.ID == ope.Target.ID {
-						log.V(LogicMessageLogLevel).Info("stop estimating", "id", et.ID)
-						close(et.estimatorStopCh)
-						estimateTargets = append(estimateTargets[:i], estimateTargets[i+1:]...)
-						// break search loop, not handler loop
-						break
-					}
+		case EstimateRemove:
+			for i, et := range estimateTargets {
+				if et.ID == ope.Target.ID {
+					log.V(LogicMessageLogLevel).Info("stop estimating", "id", et.ID)
+					close(et.estimatorStopCh)
+					estimateTargets = append(estimateTargets[:i], estimateTargets[i+1:]...)
+					// break search loop, not handler loop
+					break
 				}
 			}
 		}
@@ -287,7 +284,7 @@ estimatorLoop:
 					data[position].EstimateUnixTime,
 					datapoint,
 					et.MetricTags,
-					map[string]interface{}{"metricUnitReference": et.BaseMetricName},
+					map[string]any{"metricUnitReference": et.BaseMetricName},
 				); err != nil {
 					et.V(LogicMessageLogLevel).Info("failed to send metric data", "metric_name", metricName, "error_msg", err)
 				}
@@ -444,12 +441,11 @@ func readEstimateDataAsCSV(r io.Reader) ([]EstimateDatum, error) {
 
 // joinEstimateData join newEds and range of oldEds which older than newEds.
 func joinEstimateData(newEds, oldEds []EstimateDatum) []EstimateDatum {
-	sort.Slice(newEds, func(i, j int) bool {
-		return newEds[i].EstimateUnixTime < newEds[j].EstimateUnixTime
-	})
-	sort.Slice(oldEds, func(i, j int) bool {
-		return oldEds[i].EstimateUnixTime < oldEds[j].EstimateUnixTime
-	})
+	compareByEstimateUnixTime := func(a, b EstimateDatum) int {
+		return cmp.Compare(a.EstimateUnixTime, b.EstimateUnixTime)
+	}
+	slices.SortFunc(newEds, compareByEstimateUnixTime)
+	slices.SortFunc(oldEds, compareByEstimateUnixTime)
 
 	if len(newEds) == 0 {
 		return oldEds

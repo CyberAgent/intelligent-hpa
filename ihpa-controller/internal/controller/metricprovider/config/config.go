@@ -21,17 +21,17 @@ type MetricProviderConfig struct {
 // to a MetricProviderConfig used by FittingJob and Estimator.
 func ConvertMetricProvider(mp *ihpav1beta2.MetricProvider) *MetricProviderConfig {
 	metricProvider := MetricProviderConfig{}
-	if mp.ProviderSource.Datadog != nil {
+	if mp.Datadog != nil {
 		datadog := datadogmp.Datadog{
-			APIKey:      mp.ProviderSource.Datadog.APIKey,
-			APPKey:      mp.ProviderSource.Datadog.APPKey,
+			APIKey:      mp.Datadog.APIKey,
+			APPKey:      mp.Datadog.APPKey,
 			Aggregation: mp.Aggregation,
 		}
 		metricProvider.Datadog = &datadog
-	} else if mp.ProviderSource.Prometheus != nil {
+	} else if mp.Prometheus != nil {
 		prometheus := prometheusmp.Prometheus{
-			URL:            mp.ProviderSource.Prometheus.URL,
-			PushgatewayURL: mp.ProviderSource.Prometheus.PushgatewayURL,
+			URL:            mp.Prometheus.URL,
+			PushgatewayURL: mp.Prometheus.PushgatewayURL,
 			Aggregation:    mp.Aggregation,
 		}
 		metricProvider.Prometheus = &prometheus

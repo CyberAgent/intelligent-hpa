@@ -143,11 +143,11 @@ func TestDatadogRequest(t *testing.T) {
 			w.WriteHeader(c.statusCode)
 			body, err := os.Open(c.bodyPath)
 			if err != nil {
-				fmt.Fprintf(w, `{"error": "file open error: %s"}`, c.bodyPath)
+				_, _ = fmt.Fprintf(w, `{"error": "file open error: %s"}`, c.bodyPath)
 				return
 			}
 
-			io.Copy(w, body)
+			_, _ = io.Copy(w, body)
 		})
 	}
 	server := httptest.NewServer(mux)
@@ -426,7 +426,7 @@ func TestMergeAllSeriesDatapointToOne(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var v interface{}
+		var v any
 		if err := json.Unmarshal([]byte(tt.j), &v); err != nil {
 			t.Fatal(err)
 		}

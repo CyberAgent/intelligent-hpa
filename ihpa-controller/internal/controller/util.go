@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"time"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
@@ -31,7 +30,7 @@ func correspondForecastedMetricName(metricName string) string {
 // replaceString replaces m.key to m.value in string s.
 func replaceStrings(s string, m map[string]string) string {
 	for before, after := range m {
-		s = strings.Replace(s, before, after, -1)
+		s = strings.ReplaceAll(s, before, after)
 	}
 	return s
 }
@@ -41,16 +40,16 @@ func extractScopedMetricInfo(metric *autoscalingv2.MetricSpec) (string, *autosca
 	var name string
 	var target *autoscalingv2.MetricTarget
 	switch metric.Type {
-	case "Resource":
+	case autoscalingv2.ResourceMetricSourceType:
 		name = metric.Resource.Name.String()
 		target = metric.Resource.Target.DeepCopy()
-	case "Object":
+	case autoscalingv2.ObjectMetricSourceType:
 		name = metric.Object.Metric.Name
 		target = metric.Object.Target.DeepCopy()
-	case "Pods":
+	case autoscalingv2.PodsMetricSourceType:
 		name = metric.Pods.Metric.Name
 		target = metric.Pods.Target.DeepCopy()
-	case "External":
+	case autoscalingv2.ExternalMetricSourceType:
 		name = metric.External.Metric.Name
 		target = metric.External.Target.DeepCopy()
 	default:
@@ -124,6 +123,5 @@ func randomMinuteCronFormat(hour int) string {
 		hour = 0
 	}
 	hour %= 24
-	rand.Seed(time.Now().UnixNano())
 	return fmt.Sprintf("%d %d * * *", rand.Intn(60), hour)
 }

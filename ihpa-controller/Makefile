@@ -12,7 +12,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 # Version of controller-gen (keep in sync with .github/workflows/build-and-push.yaml)
-CONTROLLER_TOOLS_VERSION ?= v0.21.0
+CONTROLLER_TOOLS_VERSION ?= v0.22.0
 
 all: manager
 
@@ -22,11 +22,11 @@ test: generate fmt vet manifests
 
 # Build manager binary
 manager: generate fmt vet
-	go build -o bin/manager main.go
+	go build -o bin/manager cmd/main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
-	go run ./main.go
+	go run ./cmd/main.go
 
 # Install CRDs into a cluster
 install: manifests

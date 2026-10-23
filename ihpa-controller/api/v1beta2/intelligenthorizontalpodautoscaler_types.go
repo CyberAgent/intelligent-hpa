@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,7 +27,7 @@ import (
 
 // IntelligentHorizontalPodAutoscalerSpec defines the desired state of IntelligentHorizontalPodAutoscaler
 type IntelligentHorizontalPodAutoscalerSpec struct {
-	// Specifies the horizontalPodAutoscaler(v2beta2) that will be based on ihpa.
+	// Specifies the horizontalPodAutoscaler(autoscaling/v2) that will be based on ihpa.
 	HorizontalPodAutoscalerTemplate ExtendedHorizontalPodAutoscalerTemplateSpec `json:"template"`
 
 	// EstimatorPatchSpec specifies some config for estimator
@@ -47,23 +47,23 @@ type ExtendedHorizontalPodAutoscalerTemplateSpec struct {
 }
 
 type ExtendedHorizontalPodAutoscalerSpec struct {
-	// -- copy from autoscaling.v2beta2 definition --
-	ScaleTargetRef autoscalingv2beta2.CrossVersionObjectReference `json:"scaleTargetRef" protobuf:"bytes,1,opt,name=scaleTargetRef"`
-	MinReplicas    *int32                                         `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
-	MaxReplicas    int32                                          `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
+	// -- copy from autoscaling.v2 definition --
+	ScaleTargetRef autoscalingv2.CrossVersionObjectReference `json:"scaleTargetRef" protobuf:"bytes,1,opt,name=scaleTargetRef"`
+	MinReplicas    *int32                                    `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
+	MaxReplicas    int32                                     `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
 	// but use ExtendedMetricSpec
 	Metrics []ExtendedMetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
 	// ----------------------------------------------
 }
 
-// ExtendedMetricSpec is same as autoscaling.v2beta2 but including FittingJob spec
+// ExtendedMetricSpec is same as autoscaling.v2 but including FittingJob spec
 type ExtendedMetricSpec struct {
-	// -- copy from autoscaling.v2beta2 definition --
-	Type     autoscalingv2beta2.MetricSourceType      `json:"type" protobuf:"bytes,1,name=type"`
-	Object   *autoscalingv2beta2.ObjectMetricSource   `json:"object,omitempty" protobuf:"bytes,2,opt,name=object"`
-	Pods     *autoscalingv2beta2.PodsMetricSource     `json:"pods,omitempty" protobuf:"bytes,3,opt,name=pods"`
-	Resource *autoscalingv2beta2.ResourceMetricSource `json:"resource,omitempty" protobuf:"bytes,4,opt,name=resource"`
-	External *autoscalingv2beta2.ExternalMetricSource `json:"external,omitempty" protobuf:"bytes,5,opt,name=external"`
+	// -- copy from autoscaling.v2 definition --
+	Type     autoscalingv2.MetricSourceType      `json:"type" protobuf:"bytes,1,name=type"`
+	Object   *autoscalingv2.ObjectMetricSource   `json:"object,omitempty" protobuf:"bytes,2,opt,name=object"`
+	Pods     *autoscalingv2.PodsMetricSource     `json:"pods,omitempty" protobuf:"bytes,3,opt,name=pods"`
+	Resource *autoscalingv2.ResourceMetricSource `json:"resource,omitempty" protobuf:"bytes,4,opt,name=resource"`
+	External *autoscalingv2.ExternalMetricSource `json:"external,omitempty" protobuf:"bytes,5,opt,name=external"`
 	// ----------------------------------------------
 
 	// FittingJobPatchSpec specifies some config for fittingJob
@@ -71,8 +71,8 @@ type ExtendedMetricSpec struct {
 }
 
 // MetricSpec extract pure MetricSpec from ExtendedMetricSpec.
-func (ems *ExtendedMetricSpec) MetricSpec() *autoscalingv2beta2.MetricSpec {
-	return &autoscalingv2beta2.MetricSpec{
+func (ems *ExtendedMetricSpec) MetricSpec() *autoscalingv2.MetricSpec {
+	return &autoscalingv2.MetricSpec{
 		Type:     ems.Type,
 		Object:   ems.Object,
 		Pods:     ems.Pods,

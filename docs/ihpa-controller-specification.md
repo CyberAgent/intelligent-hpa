@@ -325,7 +325,7 @@ metricIdentifier.Selector = &metav1.LabelSelector{MatchLabels: g.uniqueMetricFil
 **メトリクス識別子の変換:**
 
 ```go
-func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2beta2.MetricSpec)
+func (g *ihpaGeneratorImpl) convertMetricSpecToIdentifier(metric *autoscalingv2.MetricSpec)
 ```
 
 **Resource メトリクスの変換:**
@@ -352,7 +352,7 @@ func (g *ihpaGeneratorImpl) configMapName(metric *ihpav1beta2.ExtendedMetricSpec
 **一意性ID の生成:**
 
 ```go
-func (g *ihpaGeneratorImpl) uniqueMetricID(metric *autoscalingv2beta2.MetricSpec) string {
+func (g *ihpaGeneratorImpl) uniqueMetricID(metric *autoscalingv2.MetricSpec) string {
     hash := g.uniqueMetricHash(metric)
     dst := make([]byte, hex.EncodedLen(len(hash)))
     hex.Encode(dst, hash)
@@ -556,7 +556,7 @@ func (g *ihpaGeneratorImpl) ihpaString() string {
 
 **メトリクス固有のリソース名:**
 ```go
-func (g *ihpaGeneratorImpl) ihpaMetricString(metric *autoscalingv2beta2.MetricSpec) string {
+func (g *ihpaGeneratorImpl) ihpaMetricString(metric *autoscalingv2.MetricSpec) string {
     metricName, _ := extractScopedMetricInfo(metric)
     s := fmt.Sprintf("%s-%s", g.ihpaString(), strings.ToLower(metricName))
     return sanitizeForKubernetesResourceName(s)

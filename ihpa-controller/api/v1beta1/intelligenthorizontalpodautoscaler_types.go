@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,7 +30,7 @@ type IntelligentHorizontalPodAutoscalerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Specifies the horizontalPodAutoscaler(v2beta2) that will be based on ihpa.
+	// Specifies the horizontalPodAutoscaler(autoscaling/v2) that will be based on ihpa.
 	HorizontalPodAutoscalerTemplate HorizontalPodAutoscalerTemplateSpec `json:"template"`
 
 	// EstimationGapMinutes is gap time for generating forecast metrics.
@@ -57,7 +57,7 @@ type HorizontalPodAutoscalerTemplateSpec struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Specification of the desired behavior of the hpa.
-	Spec autoscalingv2beta2.HorizontalPodAutoscalerSpec `json:"spec,omitempty"`
+	Spec autoscalingv2.HorizontalPodAutoscalerSpec `json:"spec,omitempty"`
 }
 
 // FittingJobConfig describe base config for fittingJob.

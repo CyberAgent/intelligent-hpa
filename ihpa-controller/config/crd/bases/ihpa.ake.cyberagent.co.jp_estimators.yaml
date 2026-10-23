@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: estimators.ihpa.ake.cyberagent.co.jp
 spec:
   group: ihpa.ake.cyberagent.co.jp
@@ -52,11 +52,16 @@ spec:
                 description: DataConfigMap is destination of result fittingjob forecasted.
                 properties:
                   name:
+                    default: ""
                     description: |-
                       Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     type: string
                 type: object
+                x-kubernetes-map-type: atomic
               gapMinutes:
                 default: 10
                 description: GapMinutes is gap time for generating forecast metrics.
@@ -113,14 +118,18 @@ spec:
                           The keys are set by searching "APIKey" and "APPKey" variables.
                         items:
                           description: EnvFromSource represents the source of a set
-                            of ConfigMaps
+                            of ConfigMaps or Secrets
                           properties:
                             configMapRef:
                               description: The ConfigMap to select from
                               properties:
                                 name:
+                                  default: ""
                                   description: |-
                                     Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
                                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
                                 optional:
@@ -128,16 +137,22 @@ spec:
                                     be defined
                                   type: boolean
                               type: object
+                              x-kubernetes-map-type: atomic
                             prefix:
-                              description: An optional identifier to prepend to each
-                                key in the ConfigMap. Must be a C_IDENTIFIER.
+                              description: |-
+                                Optional text to prepend to the name of each environment variable.
+                                May consist of any printable ASCII characters except '='.
                               type: string
                             secretRef:
                               description: The Secret to select from
                               properties:
                                 name:
+                                  default: ""
                                   description: |-
                                     Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
                                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
                                 optional:
@@ -145,6 +160,7 @@ spec:
                                     defined
                                   type: boolean
                               type: object
+                              x-kubernetes-map-type: atomic
                           type: object
                         type: array
                     type: object

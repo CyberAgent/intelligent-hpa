@@ -56,6 +56,10 @@ helm get values datadog -o yaml
 
 また、設定変更により Agent は再起動する場合があります。Helm 管理でない Agent は、管理元の設定に同等の値を反映するか、対応する patch を適用してください。
 
+IHPA の Datadog 接続先は、controller manager と FittingJob の学習コンテナの両方に `DD_SITE`（例: `us5.datadoghq.com`）を設定して選択します。Job は controller の環境変数を引き継がないため、FittingJob / IHPA の job patch 設定にも `env` を指定してください。未指定または空の場合は US1（`datadoghq.com`）を使用します。
+
+指定できる値は `datadoghq.com`、`us3.datadoghq.com`、`us5.datadoghq.com`、`datadoghq.eu`、`ap1.datadoghq.com`、`ap2.datadoghq.com`、`uk1.datadoghq.com` です。GovCloud を含むその他の値は HTTP リクエスト前に拒否します。`DD_SITE` を設定する前に、controller と FittingJob の両方のイメージを再ビルドしてください。
+
 ### Prometheus
 
 IHPAはメトリクスプロバイダとしてPrometheusをサポートしています。`metricProvider`セクションに`prometheus`プロバイダソースを設定します：

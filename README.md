@@ -57,6 +57,10 @@ If you have many tags, consider exporting the values to a YAML file first and ad
 
 Also, changing the settings may roll out the Agent. For an Agent not managed by Helm, apply equivalent values to its configuration source or apply a corresponding patch.
 
+To select IHPA's Datadog site, set `DD_SITE` (for example, `us5.datadoghq.com`) in both the controller manager and FittingJob training containers. Jobs do not inherit the controller's environment, so also set `env` in the FittingJob / IHPA job patch configuration. Unset or empty `DD_SITE` uses US1 (`datadoghq.com`).
+
+Supported values are `datadoghq.com`, `us3.datadoghq.com`, `us5.datadoghq.com`, `datadoghq.eu`, `ap1.datadoghq.com`, `ap2.datadoghq.com`, and `uk1.datadoghq.com`. Other values, including GovCloud sites, are rejected before HTTP requests. Rebuild both controller and FittingJob images before configuring `DD_SITE`.
+
 ### Prometheus
 
 IHPA supports Prometheus as a metric provider. Configure the `metricProvider` section with `prometheus` provider source:

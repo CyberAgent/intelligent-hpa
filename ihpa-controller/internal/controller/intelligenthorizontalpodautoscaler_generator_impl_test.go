@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -1154,13 +1155,20 @@ func TestRBACResources(t *testing.T) {
 
 func TestStatusConfigMapResource(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
-	tests := []struct {
-		name      string
+	kedaDefaultName, _ := testIHPAGeneratorSample(t)
+	kedaDefaultName.ihpa.Spec.ScaleBackend = ihpav1beta2.ScaleBackend{Type: ihpav1beta2.ScaleBackendKEDA}
+	kedaCustomName, _ := testIHPAGeneratorSample(t)
+	kedaCustomName.ihpa.Spec.ScaleBackend = ihpav1beta2.ScaleBackend{
+		Type: ihpav1beta2.ScaleBackendKEDA,
+		KEDA: &ihpav1beta2.KEDAScaleBackend{
+			Advanced: &kedav1alpha1.AdvancedConfig{HorizontalPodAutoscalerConfig: &kedav1alpha1.HorizontalPodAutoscalerConfig{Name: "custom-hpa"}},
+		},
+	}
+	tests := map[string]struct {
 		generator *ihpaGeneratorImpl
 		expected  *corev1.ConfigMap
 	}{
-		{
-			name:      "sample1",
+		"success: sample1": {
 			generator: sample1,
 			expected: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1184,8 +1192,7 @@ func TestStatusConfigMapResource(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:      "sample2",
+		"success: sample2": {
 			generator: sample2,
 			expected: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1209,10 +1216,60 @@ func TestStatusConfigMapResource(t *testing.T) {
 				},
 			},
 		},
+		"success: KEDA mode records the HPA that KEDA creates by default": {
+			generator: kedaDefaultName,
+			expected: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ihpa-sample1-status",
+					Namespace: "default",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
+							Controller:         new(true),
+							BlockOwnerDeletion: new(true),
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						},
+					},
+				},
+				Data: map[string]string{
+					"hpaName":          "keda-hpa-ihpa-sample1",
+					"scaledObjectName": "ihpa-sample1",
+					"fittingJobNames":  "ihpa-sample1-cpu",
+					"estimatorNames":   "ihpa-sample1-cpu",
+				},
+			},
+		},
+		"success: KEDA mode records the HPA of the name in advanced": {
+			generator: kedaCustomName,
+			expected: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ihpa-sample1-status",
+					Namespace: "default",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
+							Controller:         new(true),
+							BlockOwnerDeletion: new(true),
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						},
+					},
+				},
+				Data: map[string]string{
+					"hpaName":          "custom-hpa",
+					"scaledObjectName": "ihpa-sample1",
+					"fittingJobNames":  "ihpa-sample1-cpu",
+					"estimatorNames":   "ihpa-sample1-cpu",
+				},
+			},
+		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := tt.generator.StatusConfigMapResource()
 			if err != nil {
 				t.Fatal(err)

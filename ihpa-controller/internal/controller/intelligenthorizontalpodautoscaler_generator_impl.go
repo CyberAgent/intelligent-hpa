@@ -116,7 +116,7 @@ func resolveDatadogKeysFromEnv(ctx context.Context, r client.Client, namespace s
 func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2.HorizontalPodAutoscaler, error) {
 	hpa := autoscalingv2.HorizontalPodAutoscaler{}
 	hpa.ObjectMeta = metav1.ObjectMeta{
-		Name:      g.hpaName(),
+		Name:      g.autoscalerName(),
 		Namespace: g.ihpa.GetNamespace(),
 	}
 
@@ -508,9 +508,12 @@ func (g *ihpaGeneratorImpl) StatusConfigMapResource() (*corev1.ConfigMap, error)
 	}
 
 	data := map[string]string{
-		"hpaName":         g.hpaName(),
+		"hpaName":         g.scalingHPAName(),
 		"fittingJobNames": strings.Join(fittingJobNames, ","),
 		"estimatorNames":  strings.Join(estimatorNames, ","),
+	}
+	if g.ihpa.Spec.ScaleBackend.Type == ihpav1beta2.ScaleBackendKEDA {
+		data["scaledObjectName"] = g.autoscalerName()
 	}
 
 	cm := corev1.ConfigMap{
@@ -593,7 +596,24 @@ func (g *ihpaGeneratorImpl) ihpaString() string {
 	return sanitizeForKubernetesResourceName(s)
 }
 
-func (g *ihpaGeneratorImpl) hpaName() string  { return g.ihpaString() }
+// autoscalerName returns the name of the autoscaler that the IHPA creates, the HPA or the ScaledObject.
+func (g *ihpaGeneratorImpl) autoscalerName() string { return g.ihpaString() }
+
+// scalingHPAName returns the name of the HPA that scales the target workload.
+// In KEDA mode, KEDA creates the HPA for the ScaledObject,
+// as keda-hpa-<ScaledObject name> unless advanced.horizontalPodAutoscalerConfig.name is set.
+func (g *ihpaGeneratorImpl) scalingHPAName() string {
+	backend := g.ihpa.Spec.ScaleBackend
+	if backend.Type != ihpav1beta2.ScaleBackendKEDA {
+		return g.autoscalerName()
+	}
+	if backend.KEDA != nil && backend.KEDA.Advanced != nil && backend.KEDA.Advanced.HorizontalPodAutoscalerConfig != nil &&
+		backend.KEDA.Advanced.HorizontalPodAutoscalerConfig.Name != "" {
+		return backend.KEDA.Advanced.HorizontalPodAutoscalerConfig.Name
+	}
+	return "keda-hpa-" + g.autoscalerName()
+}
+
 func (g *ihpaGeneratorImpl) rbacName() string { return g.ihpaString() }
 func (g *ihpaGeneratorImpl) statusConfigMapName() string {
 	return sanitizeForKubernetesResourceName(g.ihpaString() + "-status")

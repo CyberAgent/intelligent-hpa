@@ -10,8 +10,10 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -108,7 +110,7 @@ func testReconcileIHPA(metricNames ...corev1.ResourceName) *ihpav1beta2.Intellig
 func reconcileForTest(t *testing.T, r *IntelligentHorizontalPodAutoscalerReconciler) {
 	t.Helper()
 
-	if _, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "nginx"}}); err != nil {
+	if _, err := reconcileResultForTest(r); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 }
@@ -121,6 +123,41 @@ func getHPAForTest(t *testing.T, r *IntelligentHorizontalPodAutoscalerReconciler
 		t.Fatalf("failed to get hpa: %v", err)
 	}
 	return hpa
+}
+
+func testReconcileKEDAIHPA() *ihpav1beta2.IntelligentHorizontalPodAutoscaler {
+	ihpa := testReconcileIHPA(corev1.ResourceCPU)
+	ihpa.Spec.MetricProvider = ihpav1beta2.MetricProvider{
+		Name:           "prometheus",
+		ProviderSource: ihpav1beta2.ProviderSource{Prometheus: &ihpav1beta2.PrometheusProviderSource{URL: "http://prometheus:9090", PushgatewayURL: "http://pushgateway:9091"}},
+	}
+	ihpa.Spec.ScaleBackend = ihpav1beta2.ScaleBackend{Type: ihpav1beta2.ScaleBackendKEDA}
+	return ihpa
+}
+
+func getScaledObjectForTest(r *IntelligentHorizontalPodAutoscalerReconciler) (*unstructured.Unstructured, error) {
+	so := &unstructured.Unstructured{}
+	so.SetGroupVersionKind(scaledObjectGVK)
+	err := r.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "ihpa-nginx"}, so)
+	return so, err
+}
+
+func reconcileResultForTest(r *IntelligentHorizontalPodAutoscalerReconciler) (ctrl.Result, error) {
+	return r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "nginx"}})
+}
+
+func scaledObjectMaxReplicasForTest(t *testing.T, r *IntelligentHorizontalPodAutoscalerReconciler) int64 {
+	t.Helper()
+
+	so, err := getScaledObjectForTest(r)
+	if err != nil {
+		t.Fatalf("failed to get scaledobject: %v", err)
+	}
+	got, _, err := unstructured.NestedInt64(so.Object, "spec", "maxReplicaCount")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return got
 }
 
 func TestReconcile_HPAMode(t *testing.T) {
@@ -202,6 +239,52 @@ func TestReconcile_HPAMode(t *testing.T) {
 		want := getHPAForTest(t, plain).Spec
 		if got := getHPAForTest(t, r).Spec; !reflect.DeepEqual(got, want) {
 			t.Errorf("hpa spec = %v, want %v", got, want)
+		}
+	})
+}
+
+func TestReconcile_KEDAMode(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success: creates the ScaledObject instead of the HPA", func(t *testing.T) {
+		t.Parallel()
+
+		kubeSystem, deployment := testReconcileObjects()
+		r := newReconcilerForTest(t, kubeSystem, deployment, testReconcileKEDAIHPA())
+
+		reconcileForTest(t, r)
+
+		so, err := getScaledObjectForTest(r)
+		if err != nil {
+			t.Fatalf("failed to get scaledobject: %v", err)
+		}
+		if got, _, _ := unstructured.NestedString(so.Object, "spec", "scaleTargetRef", "name"); got != "nginx" {
+			t.Errorf("scaledobject scaleTargetRef.name = %q, want nginx", got)
+		}
+		if err := r.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "ihpa-nginx"}, &autoscalingv2.HorizontalPodAutoscaler{}); !apierrors.IsNotFound(err) {
+			t.Errorf("get hpa error = %v, want NotFound", err)
+		}
+	})
+
+	t.Run("success: updates the spec of the ScaledObject", func(t *testing.T) {
+		t.Parallel()
+
+		kubeSystem, deployment := testReconcileObjects()
+		r := newReconcilerForTest(t, kubeSystem, deployment, testReconcileKEDAIHPA())
+		reconcileForTest(t, r)
+
+		ihpa := &ihpav1beta2.IntelligentHorizontalPodAutoscaler{}
+		if err := r.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "nginx"}, ihpa); err != nil {
+			t.Fatal(err)
+		}
+		ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.MaxReplicas = 10
+		if err := r.Update(context.Background(), ihpa); err != nil {
+			t.Fatal(err)
+		}
+		reconcileForTest(t, r)
+
+		if got := scaledObjectMaxReplicasForTest(t, r); got != 10 {
+			t.Errorf("scaledobject maxReplicaCount = %d, want 10", got)
 		}
 	})
 }

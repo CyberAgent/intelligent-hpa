@@ -197,7 +197,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) reconcileAutoscaler(ctx c
 	// Both backends are applied as unstructured by their GroupVersionKind, so that one code path serves them.
 	// Typed handling per backend would duplicate the get/create/update/delete logic.
 	// The KEDA types are still used to generate the ScaledObject.
-	// (K8s 1.25+ removed autoscaling/v2beta2, so we use autoscaling/v2)
+	// autoscaling/v2 is used because K8s 1.25+ removed autoscaling/v2beta2.
 	objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(autoscaler)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to convert %s to unstructured: %w", gvk.Kind, err)

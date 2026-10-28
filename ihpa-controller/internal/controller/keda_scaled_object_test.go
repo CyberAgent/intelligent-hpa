@@ -237,6 +237,36 @@ func TestScaledObjectResource_ReplicaCounts(t *testing.T) {
 	}
 }
 
+func TestScaledObjectResource_ReplicaBounds(t *testing.T) {
+	t.Parallel()
+
+	// The template has minReplicas 1 and maxReplicas 5.
+	tests := map[string]struct {
+		keda    *ihpav1beta2.KEDAScaleBackend
+		wantErr bool
+	}{
+		"success: min equals max":                      {keda: &ihpav1beta2.KEDAScaleBackend{MinReplicaCount: new(int32(5))}},
+		"success: idle is less than min":               {keda: &ihpav1beta2.KEDAScaleBackend{IdleReplicaCount: new(int32(0))}},
+		"fail: keda min exceeds the template max":      {keda: &ihpav1beta2.KEDAScaleBackend{MinReplicaCount: new(int32(6))}, wantErr: true},
+		"fail: keda max is less than the template min": {keda: &ihpav1beta2.KEDAScaleBackend{MinReplicaCount: new(int32(3)), MaxReplicaCount: new(int32(2))}, wantErr: true},
+		"fail: idle equals min":                        {keda: &ihpav1beta2.KEDAScaleBackend{IdleReplicaCount: new(int32(1))}, wantErr: true},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			g := testKEDAGenerator(t)
+			g.ihpa.Spec.ScaleBackend.KEDA = tt.keda
+
+			_, err := g.ScaledObjectResource()
+			if got := errors.Is(err, errInvalidReplicaCount); got != tt.wantErr {
+				t.Errorf("ScaledObjectResource() error = %v, want errInvalidReplicaCount: %t", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestScaledObjectResource_ForecastTriggers(t *testing.T) {
 	t.Parallel()
 

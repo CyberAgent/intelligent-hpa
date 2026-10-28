@@ -240,6 +240,7 @@ func TestReportFailure(t *testing.T) {
 		"success: unsupported metric provider is terminal": {err: fmt.Errorf("failed to generate: %w", errUnsupportedMetricProvider), expectTerminal: true, expectEvent: "Warning UnsupportedMetricProvider "},
 		"success: ScaledObject name too long is terminal":  {err: fmt.Errorf("failed to generate: %w", errScaledObjectNameTooLong), expectTerminal: true, expectEvent: "Warning ScaledObjectNameTooLong "},
 		"success: KEDA is not installed is terminal":       {err: fmt.Errorf("%w: no matches", errKEDANotInstalled), expectTerminal: true, expectEvent: "Warning KEDANotInstalled "},
+		"success: invalid replica counts are terminal":     {err: fmt.Errorf("failed to generate: %w", errInvalidReplicaCount), expectTerminal: true, expectEvent: "Warning InvalidReplicaCount "},
 		"success: conflict is requeued without an event":   {err: fmt.Errorf("failed to update ScaledObject: %w", conflict), expectRequeue: true},
 		"success: other errors are retried with backoff":   {err: errors.New("connection refused"), expectEvent: "Warning ReconcileFailed "},
 	}
@@ -280,6 +281,7 @@ func TestEventReason(t *testing.T) {
 		"success: unsupported metric provider":   {err: fmt.Errorf("failed to generate: %w", errUnsupportedMetricProvider), expected: "UnsupportedMetricProvider"},
 		"success: ScaledObject name too long":    {err: fmt.Errorf("failed to generate: %w", errScaledObjectNameTooLong), expected: "ScaledObjectNameTooLong"},
 		"success: KEDA is not installed":         {err: fmt.Errorf("%w: no matches", errKEDANotInstalled), expected: "KEDANotInstalled"},
+		"success: invalid replica counts":        {err: fmt.Errorf("failed to generate: %w", errInvalidReplicaCount), expected: "InvalidReplicaCount"},
 		"success: resource of another owner":     {err: fmt.Errorf("ScaledObject is not deleted: %w", errNotControlled), expected: "ResourceNotControlled"},
 		"success: error without a specific kind": {err: errors.New("connection refused"), expected: "ReconcileFailed"},
 	}
@@ -651,6 +653,27 @@ func TestReconcile_SwitchBackend(t *testing.T) {
 		}
 		if !hpaExistsForTest(r) {
 			t.Error("hpa is deleted, want it kept while KEDA is not installed")
+		}
+	})
+
+	t.Run("fail: keeps the HPA when the replica counts are invalid for KEDA", func(t *testing.T) {
+		t.Parallel()
+
+		kubeSystem, deployment := testReconcileObjects()
+		ihpa := testReconcileKEDAIHPA()
+		ihpa.Spec.ScaleBackend.Type = ihpav1beta2.ScaleBackendHPA
+		ihpa.Spec.ScaleBackend.KEDA = &ihpav1beta2.KEDAScaleBackend{MinReplicaCount: new(ihpa.Spec.HorizontalPodAutoscalerTemplate.Spec.MaxReplicas + 1)}
+		r := newReconcilerForTest(t, kubeSystem, deployment, ihpa)
+		reconcileForTest(t, r)
+		setScaleBackendTypeForTest(t, r, ihpav1beta2.ScaleBackendKEDA)
+
+		_, err := reconcileResultForTest(r)
+
+		if !errors.Is(err, errInvalidReplicaCount) {
+			t.Errorf("Reconcile() error = %v, want %v", err, errInvalidReplicaCount)
+		}
+		if !hpaExistsForTest(r) {
+			t.Error("hpa is deleted, want it kept while the replica counts are invalid")
 		}
 	})
 }

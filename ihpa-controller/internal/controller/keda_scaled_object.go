@@ -22,6 +22,8 @@ const maxScaledObjectNameLength = 63 - len("keda-hpa-")
 
 var errScaledObjectNameTooLong = errors.New("name of the IntelligentHorizontalPodAutoscaler is too long for scaleBackend KEDA")
 
+var errInvalidReplicaCount = errors.New("replica counts are invalid for scaleBackend KEDA")
+
 // ScaledObjectResource returns a ScaledObject whose triggers read the forecasted metrics,
 // followed by the triggers of scaleBackend.keda.
 func (g *ihpaGeneratorImpl) ScaledObjectResource() (*kedav1alpha1.ScaledObject, error) {
@@ -69,6 +71,10 @@ func (g *ihpaGeneratorImpl) ScaledObjectResource() (*kedav1alpha1.ScaledObject, 
 			Advanced:              keda.Advanced.DeepCopy(),
 			Triggers:              triggers,
 		},
+	}
+
+	if err := kedav1alpha1.CheckReplicaCountBoundsAreValid(so); err != nil {
+		return nil, fmt.Errorf("%w: %w", errInvalidReplicaCount, err)
 	}
 
 	addOwnerReference(&(g.ihpa.TypeMeta), &(g.ihpa.ObjectMeta), so)

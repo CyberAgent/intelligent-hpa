@@ -153,7 +153,7 @@ func (r *IntelligentHorizontalPodAutoscalerReconciler) reportFailure(log logr.Lo
 
 // isTerminal reports whether the error cannot be resolved by retrying without a change of the IHPA or the cluster.
 func isTerminal(err error) bool {
-	return errors.Is(err, errKEDANotInstalled) || errors.Is(err, errUnsupportedMetricProvider) || errors.Is(err, errScaledObjectNameTooLong) || errors.Is(err, errInvalidReplicaCount)
+	return errors.Is(err, errKEDANotInstalled) || errors.Is(err, errUnsupportedMetricProvider) || errors.Is(err, errScaledObjectNameTooLong) || errors.Is(err, errInvalidReplicaCount) || errors.Is(err, errInvalidTriggers)
 }
 
 func (r *IntelligentHorizontalPodAutoscalerReconciler) recordWarning(ihpa *ihpav1beta2.IntelligentHorizontalPodAutoscaler, reason, message string) {
@@ -173,6 +173,8 @@ func eventReason(err error) string {
 		return "ScaledObjectNameTooLong"
 	case errors.Is(err, errInvalidReplicaCount):
 		return "InvalidReplicaCount"
+	case errors.Is(err, errInvalidTriggers):
+		return "InvalidTriggers"
 	case errors.Is(err, errNotControlled):
 		return "ResourceNotControlled"
 	default:

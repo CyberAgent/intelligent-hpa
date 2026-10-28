@@ -267,6 +267,40 @@ func TestScaledObjectResource_ReplicaBounds(t *testing.T) {
 	}
 }
 
+func TestScaledObjectResource_TriggerValidation(t *testing.T) {
+	t.Parallel()
+
+	// The template has one metric, which becomes an unnamed forecast trigger.
+	tests := map[string]struct {
+		triggers []kedav1alpha1.ScaleTriggers
+		wantErr  bool
+	}{
+		"success: triggers with unique names": {triggers: []kedav1alpha1.ScaleTriggers{
+			{Type: "cron", Name: "business-hours"},
+			{Type: "kafka", Name: "lag", UseCachedMetrics: true},
+		}},
+		"fail: useCachedMetrics on a cpu trigger": {triggers: []kedav1alpha1.ScaleTriggers{{Type: "cpu", UseCachedMetrics: true}}, wantErr: true},
+		"fail: duplicated trigger names": {triggers: []kedav1alpha1.ScaleTriggers{
+			{Type: "cron", Name: "dup"},
+			{Type: "kafka", Name: "dup"},
+		}, wantErr: true},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			g := testKEDAGenerator(t)
+			g.ihpa.Spec.ScaleBackend.KEDA = &ihpav1beta2.KEDAScaleBackend{Triggers: tt.triggers}
+
+			_, err := g.ScaledObjectResource()
+			if got := errors.Is(err, errInvalidTriggers); got != tt.wantErr {
+				t.Errorf("ScaledObjectResource() error = %v, want errInvalidTriggers: %t", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestScaledObjectResource_ForecastTriggers(t *testing.T) {
 	t.Parallel()
 

@@ -24,6 +24,8 @@ var errScaledObjectNameTooLong = errors.New("name of the IntelligentHorizontalPo
 
 var errInvalidReplicaCount = errors.New("replica counts are invalid for scaleBackend KEDA")
 
+var errInvalidTriggers = errors.New("triggers are invalid for scaleBackend KEDA")
+
 // ScaledObjectResource returns a ScaledObject whose triggers read the forecasted metrics,
 // followed by the triggers of scaleBackend.keda.
 func (g *ihpaGeneratorImpl) ScaledObjectResource() (*kedav1alpha1.ScaledObject, error) {
@@ -75,6 +77,9 @@ func (g *ihpaGeneratorImpl) ScaledObjectResource() (*kedav1alpha1.ScaledObject, 
 
 	if err := kedav1alpha1.CheckReplicaCountBoundsAreValid(so); err != nil {
 		return nil, fmt.Errorf("%w: %w", errInvalidReplicaCount, err)
+	}
+	if err := kedav1alpha1.ValidateTriggers(so.Spec.Triggers); err != nil {
+		return nil, fmt.Errorf("%w: %w", errInvalidTriggers, err)
 	}
 
 	addOwnerReference(&(g.ihpa.TypeMeta), &(g.ihpa.ObjectMeta), so)

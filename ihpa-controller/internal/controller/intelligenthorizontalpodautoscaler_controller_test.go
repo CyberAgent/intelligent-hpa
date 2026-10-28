@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
@@ -241,6 +242,7 @@ func TestReportFailure(t *testing.T) {
 		"success: ScaledObject name too long is terminal":  {err: fmt.Errorf("failed to generate: %w", errScaledObjectNameTooLong), expectTerminal: true, expectEvent: "Warning ScaledObjectNameTooLong "},
 		"success: KEDA is not installed is terminal":       {err: fmt.Errorf("%w: no matches", errKEDANotInstalled), expectTerminal: true, expectEvent: "Warning KEDANotInstalled "},
 		"success: invalid replica counts are terminal":     {err: fmt.Errorf("failed to generate: %w", errInvalidReplicaCount), expectTerminal: true, expectEvent: "Warning InvalidReplicaCount "},
+		"success: invalid triggers are terminal":           {err: fmt.Errorf("failed to generate: %w", errInvalidTriggers), expectTerminal: true, expectEvent: "Warning InvalidTriggers "},
 		"success: conflict is requeued without an event":   {err: fmt.Errorf("failed to update ScaledObject: %w", conflict), expectRequeue: true},
 		"success: other errors are retried with backoff":   {err: errors.New("connection refused"), expectEvent: "Warning ReconcileFailed "},
 	}
@@ -282,6 +284,7 @@ func TestEventReason(t *testing.T) {
 		"success: ScaledObject name too long":    {err: fmt.Errorf("failed to generate: %w", errScaledObjectNameTooLong), expected: "ScaledObjectNameTooLong"},
 		"success: KEDA is not installed":         {err: fmt.Errorf("%w: no matches", errKEDANotInstalled), expected: "KEDANotInstalled"},
 		"success: invalid replica counts":        {err: fmt.Errorf("failed to generate: %w", errInvalidReplicaCount), expected: "InvalidReplicaCount"},
+		"success: invalid triggers":              {err: fmt.Errorf("failed to generate: %w", errInvalidTriggers), expected: "InvalidTriggers"},
 		"success: resource of another owner":     {err: fmt.Errorf("ScaledObject is not deleted: %w", errNotControlled), expected: "ResourceNotControlled"},
 		"success: error without a specific kind": {err: errors.New("connection refused"), expected: "ReconcileFailed"},
 	}
@@ -674,6 +677,27 @@ func TestReconcile_SwitchBackend(t *testing.T) {
 		}
 		if !hpaExistsForTest(r) {
 			t.Error("hpa is deleted, want it kept while the replica counts are invalid")
+		}
+	})
+
+	t.Run("fail: keeps the HPA when the triggers are invalid for KEDA", func(t *testing.T) {
+		t.Parallel()
+
+		kubeSystem, deployment := testReconcileObjects()
+		ihpa := testReconcileKEDAIHPA()
+		ihpa.Spec.ScaleBackend.Type = ihpav1beta2.ScaleBackendHPA
+		ihpa.Spec.ScaleBackend.KEDA = &ihpav1beta2.KEDAScaleBackend{Triggers: []kedav1alpha1.ScaleTriggers{{Type: "cpu", UseCachedMetrics: true}}}
+		r := newReconcilerForTest(t, kubeSystem, deployment, ihpa)
+		reconcileForTest(t, r)
+		setScaleBackendTypeForTest(t, r, ihpav1beta2.ScaleBackendKEDA)
+
+		_, err := reconcileResultForTest(r)
+
+		if !errors.Is(err, errInvalidTriggers) {
+			t.Errorf("Reconcile() error = %v, want %v", err, errInvalidTriggers)
+		}
+		if !hpaExistsForTest(r) {
+			t.Error("hpa is deleted, want it kept while the triggers are invalid")
 		}
 	})
 }

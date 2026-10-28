@@ -69,23 +69,29 @@ type ScaleBackend struct {
 // The field types are those of ScaledObjectSpec in KEDA, so they follow KEDA's schema.
 type KEDAScaleBackend struct {
 	// PollingInterval is the interval in seconds to check each trigger on.
+	// +kubebuilder:validation:Minimum=1
 	PollingInterval *int32 `json:"pollingInterval,omitempty"`
 
 	// CooldownPeriod is the period in seconds to wait after the last trigger reported active
 	// before scaling the resource back to idleReplicaCount.
+	// +kubebuilder:validation:Minimum=0
 	CooldownPeriod *int32 `json:"cooldownPeriod,omitempty"`
 
 	// InitialCooldownPeriod is the period in seconds to wait after the ScaledObject is created
 	// before scaling the resource back to idleReplicaCount.
+	// +kubebuilder:validation:Minimum=0
 	InitialCooldownPeriod *int32 `json:"initialCooldownPeriod,omitempty"`
 
 	// IdleReplicaCount is the replica count while no trigger is active.
+	// +kubebuilder:validation:Minimum=0
 	IdleReplicaCount *int32 `json:"idleReplicaCount,omitempty"`
 
 	// MinReplicaCount overrides template.spec.minReplicas.
+	// +kubebuilder:validation:Minimum=0
 	MinReplicaCount *int32 `json:"minReplicaCount,omitempty"`
 
 	// MaxReplicaCount overrides template.spec.maxReplicas.
+	// +kubebuilder:validation:Minimum=1
 	MaxReplicaCount *int32 `json:"maxReplicaCount,omitempty"`
 
 	// Fallback is the behavior when a trigger fails to get its metrics.

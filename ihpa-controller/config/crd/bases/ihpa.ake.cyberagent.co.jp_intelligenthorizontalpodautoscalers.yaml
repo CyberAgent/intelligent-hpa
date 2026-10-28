@@ -1285,6 +1285,7 @@ spec:
                           CooldownPeriod is the period in seconds to wait after the last trigger reported active
                           before scaling the resource back to idleReplicaCount.
                         format: int32
+                        minimum: 0
                         type: integer
                       fallback:
                         description: Fallback is the behavior when a trigger fails
@@ -1315,25 +1316,30 @@ spec:
                         description: IdleReplicaCount is the replica count while no
                           trigger is active.
                         format: int32
+                        minimum: 0
                         type: integer
                       initialCooldownPeriod:
                         description: |-
                           InitialCooldownPeriod is the period in seconds to wait after the ScaledObject is created
                           before scaling the resource back to idleReplicaCount.
                         format: int32
+                        minimum: 0
                         type: integer
                       maxReplicaCount:
                         description: MaxReplicaCount overrides template.spec.maxReplicas.
                         format: int32
+                        minimum: 1
                         type: integer
                       minReplicaCount:
                         description: MinReplicaCount overrides template.spec.minReplicas.
                         format: int32
+                        minimum: 0
                         type: integer
                       pollingInterval:
                         description: PollingInterval is the interval in seconds to
                           check each trigger on.
                         format: int32
+                        minimum: 1
                         type: integer
                       triggers:
                         description: Triggers are KEDA triggers appended to the ones

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -1154,13 +1155,20 @@ func TestRBACResources(t *testing.T) {
 
 func TestStatusConfigMapResource(t *testing.T) {
 	sample1, sample2 := testIHPAGeneratorSample(t)
-	tests := []struct {
-		name      string
+	kedaDefaultName, _ := testIHPAGeneratorSample(t)
+	kedaDefaultName.ihpa.Spec.ScaleBackend = ihpav1beta2.ScaleBackend{Type: ihpav1beta2.ScaleBackendKEDA}
+	kedaCustomName, _ := testIHPAGeneratorSample(t)
+	kedaCustomName.ihpa.Spec.ScaleBackend = ihpav1beta2.ScaleBackend{
+		Type: ihpav1beta2.ScaleBackendKEDA,
+		KEDA: &ihpav1beta2.KEDAScaleBackend{
+			Advanced: &kedav1alpha1.AdvancedConfig{HorizontalPodAutoscalerConfig: &kedav1alpha1.HorizontalPodAutoscalerConfig{Name: "custom-hpa"}},
+		},
+	}
+	tests := map[string]struct {
 		generator *ihpaGeneratorImpl
 		expected  *corev1.ConfigMap
 	}{
-		{
-			name:      "sample1",
+		"success: sample1": {
 			generator: sample1,
 			expected: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1184,8 +1192,7 @@ func TestStatusConfigMapResource(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:      "sample2",
+		"success: sample2": {
 			generator: sample2,
 			expected: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1209,10 +1216,60 @@ func TestStatusConfigMapResource(t *testing.T) {
 				},
 			},
 		},
+		"success: KEDA mode records the HPA that KEDA creates by default": {
+			generator: kedaDefaultName,
+			expected: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ihpa-sample1-status",
+					Namespace: "default",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
+							Controller:         new(true),
+							BlockOwnerDeletion: new(true),
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						},
+					},
+				},
+				Data: map[string]string{
+					"hpaName":          "keda-hpa-ihpa-sample1",
+					"scaledObjectName": "ihpa-sample1",
+					"fittingJobNames":  "ihpa-sample1-cpu",
+					"estimatorNames":   "ihpa-sample1-cpu",
+				},
+			},
+		},
+		"success: KEDA mode records the HPA of the name in advanced": {
+			generator: kedaCustomName,
+			expected: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ihpa-sample1-status",
+					Namespace: "default",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion:         "ihpa.ake.cyberagent.co.jp/v1beta1",
+							Controller:         new(true),
+							BlockOwnerDeletion: new(true),
+							Kind:               "IntelligentHorizontalPodAutoscaler.ihpa.ake.cyberagent.co.jp",
+							Name:               "sample1",
+							UID:                "9fc642f3-bb9d-404d-afd5-d04f1d6149ad",
+						},
+					},
+				},
+				Data: map[string]string{
+					"hpaName":          "custom-hpa",
+					"scaledObjectName": "ihpa-sample1",
+					"fittingJobNames":  "ihpa-sample1-cpu",
+					"estimatorNames":   "ihpa-sample1-cpu",
+				},
+			},
+		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := tt.generator.StatusConfigMapResource()
 			if err != nil {
 				t.Fatal(err)
@@ -1324,6 +1381,130 @@ func TestGenerateForecastedMetricSpec(t *testing.T) {
 		if !reflect.DeepEqual(got, tt.expected) {
 			t.Fatalf("metric identifier is not match (got=%s, exp=%s)", got, tt.expected)
 		}
+	}
+}
+
+func TestForecastTarget(t *testing.T) {
+	t.Parallel()
+
+	sample1, sample2 := testIHPAGeneratorSample(t)
+	prometheus := &ihpaGeneratorImpl{
+		kubeSystemUID: "46f9e396-d3c4-4103-a807-49054f47bbfb",
+		scaleTargetRequests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("256Mi"),
+		},
+		ihpa: sample1.ihpa.DeepCopy(),
+	}
+	prometheus.ihpa.Spec.MetricProvider = ihpav1beta2.MetricProvider{
+		Name:           "prometheus",
+		ProviderSource: ihpav1beta2.ProviderSource{Prometheus: &ihpav1beta2.PrometheusProviderSource{URL: "http://prometheus:9090"}},
+	}
+
+	tests := map[string]struct {
+		generator *ihpaGeneratorImpl
+		metric    *autoscalingv2.MetricSpec
+		expected  forecastTarget
+		wantErr   bool
+	}{
+		"success: utilization of cpu is converted by the requests": {
+			generator: sample1,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "Resource",
+				Resource: &autoscalingv2.ResourceMetricSource{
+					Name:   "cpu",
+					Target: autoscalingv2.MetricTarget{Type: "Utilization", AverageUtilization: new(int32(30))},
+				},
+			},
+			expected: forecastTarget{
+				MetricName: "ake.ihpa.forecasted_kubernetes_cpu_usage_total",
+				Labels: map[string]string{
+					"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+					"kube_namespace":  "default",
+					"kube_deployment": "nginx",
+				},
+				AverageValue: *resource.NewQuantity(150000000, resource.DecimalSI),
+			},
+		},
+		"success: utilization of memory on prometheus": {
+			generator: prometheus,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "Resource",
+				Resource: &autoscalingv2.ResourceMetricSource{
+					Name:   "memory",
+					Target: autoscalingv2.MetricTarget{Type: "Utilization", AverageUtilization: new(int32(50))},
+				},
+			},
+			expected: forecastTarget{
+				MetricName: "ake.ihpa.forecasted_container_memory_working_set_bytes",
+				Labels: map[string]string{
+					"kube_system_uid": "46f9e396-d3c4-4103-a807-49054f47bbfb",
+					"kube_namespace":  "default",
+					"kube_deployment": "nginx",
+				},
+				AverageValue: *resource.NewQuantity(134217728, resource.DecimalSI),
+			},
+		},
+		"success: average value of an external metric is passed through": {
+			generator: sample2,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "External",
+				External: &autoscalingv2.ExternalMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{Name: "nginx.net.request_per_s"},
+					Target: autoscalingv2.MetricTarget{Type: "AverageValue", AverageValue: resource.NewQuantity(100, resource.DecimalSI)},
+				},
+			},
+			expected: forecastTarget{
+				MetricName: "ake.ihpa.forecasted_nginx_net_request_per_s",
+				Labels: map[string]string{
+					"kube_system_uid":  "9833e04f-a689-47f9-b588-36a616432abd",
+					"kube_namespace":   "web",
+					"kube_statefulset": "web-db",
+				},
+				AverageValue: *resource.NewQuantity(100, resource.DecimalSI),
+			},
+		},
+		"fail: the requests of the resource are missing": {
+			generator: prometheus,
+			metric: &autoscalingv2.MetricSpec{
+				Type: "Resource",
+				Resource: &autoscalingv2.ResourceMetricSource{
+					Name:   "cpu",
+					Target: autoscalingv2.MetricTarget{Type: "Utilization", AverageUtilization: new(int32(30))},
+				},
+			},
+			wantErr: true,
+		},
+		"fail: the type of the metric is unsupported": {
+			generator: sample1,
+			metric:    &autoscalingv2.MetricSpec{Type: "ContainerResource"},
+			wantErr:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := tt.generator.forecastTarget(tt.metric)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("forecastTarget() = %v, want an error", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.MetricName != tt.expected.MetricName {
+				t.Errorf("MetricName = %s, want %s", got.MetricName, tt.expected.MetricName)
+			}
+			if !reflect.DeepEqual(got.Labels, tt.expected.Labels) {
+				t.Errorf("Labels = %v, want %v", got.Labels, tt.expected.Labels)
+			}
+			if got.AverageValue.Cmp(tt.expected.AverageValue) != 0 {
+				t.Errorf("AverageValue = %s, want %s", got.AverageValue.String(), tt.expected.AverageValue.String())
+			}
+		})
 	}
 }
 

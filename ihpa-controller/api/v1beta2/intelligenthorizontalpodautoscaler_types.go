@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +36,72 @@ type IntelligentHorizontalPodAutoscalerSpec struct {
 
 	// MetricProvider is data source and destination of metrics datapoints.
 	MetricProvider MetricProvider `json:"metricProvider"`
+
+	// ScaleBackend selects the component that owns the final scaling decision.
+	// +kubebuilder:default={type: HPA}
+	ScaleBackend ScaleBackend `json:"scaleBackend,omitempty"`
+}
+
+// ScaleBackendType is the kind of resource that scales the target workload.
+// +kubebuilder:validation:Enum=HPA;KEDA
+type ScaleBackendType string
+
+const (
+	// ScaleBackendHPA generates a HorizontalPodAutoscaler.
+	ScaleBackendHPA ScaleBackendType = "HPA"
+	// ScaleBackendKEDA generates a KEDA ScaledObject instead of a HorizontalPodAutoscaler.
+	ScaleBackendKEDA ScaleBackendType = "KEDA"
+)
+
+// ScaleBackend defines which resource owns the final scaling of the target workload.
+type ScaleBackend struct {
+	// Type is HPA or KEDA. HPA keeps the behavior before KEDA integration.
+	// +kubebuilder:default=HPA
+	Type ScaleBackendType `json:"type,omitempty"`
+
+	// KEDA is used only when Type is KEDA.
+	KEDA *KEDAScaleBackend `json:"keda,omitempty"`
+}
+
+// KEDAScaleBackend defines the ScaledObject options.
+// scaleTargetRef of the ScaledObject always comes from the template. Unless overridden here,
+// minReplicas and maxReplicas of the template are mapped to minReplicaCount and maxReplicaCount.
+// The field types are those of ScaledObjectSpec in KEDA, so they follow KEDA's schema.
+type KEDAScaleBackend struct {
+	// PollingInterval is the interval in seconds to check each trigger on.
+	// +kubebuilder:validation:Minimum=1
+	PollingInterval *int32 `json:"pollingInterval,omitempty"`
+
+	// CooldownPeriod is the period in seconds to wait after the last trigger reported active
+	// before scaling the resource back to idleReplicaCount.
+	// +kubebuilder:validation:Minimum=0
+	CooldownPeriod *int32 `json:"cooldownPeriod,omitempty"`
+
+	// InitialCooldownPeriod is the period in seconds to wait after the ScaledObject is created
+	// before scaling the resource back to idleReplicaCount.
+	// +kubebuilder:validation:Minimum=0
+	InitialCooldownPeriod *int32 `json:"initialCooldownPeriod,omitempty"`
+
+	// IdleReplicaCount is the replica count while no trigger is active.
+	// +kubebuilder:validation:Minimum=0
+	IdleReplicaCount *int32 `json:"idleReplicaCount,omitempty"`
+
+	// MinReplicaCount overrides template.spec.minReplicas.
+	// +kubebuilder:validation:Minimum=0
+	MinReplicaCount *int32 `json:"minReplicaCount,omitempty"`
+
+	// MaxReplicaCount overrides template.spec.maxReplicas.
+	// +kubebuilder:validation:Minimum=1
+	MaxReplicaCount *int32 `json:"maxReplicaCount,omitempty"`
+
+	// Fallback is the behavior when a trigger fails to get its metrics.
+	Fallback *kedav1alpha1.Fallback `json:"fallback,omitempty"`
+
+	// Advanced is the advanced options of the ScaledObject.
+	Advanced *kedav1alpha1.AdvancedConfig `json:"advanced,omitempty"`
+
+	// Triggers are KEDA triggers appended to the ones generated from forecast metrics.
+	Triggers []kedav1alpha1.ScaleTriggers `json:"triggers,omitempty"`
 }
 
 // HorizontalPodAutoscalerTemplateSpec describes the data a HPA should have when created from a template

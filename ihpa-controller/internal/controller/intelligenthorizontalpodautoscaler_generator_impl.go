@@ -109,7 +109,7 @@ func resolveDatadogKeysFromEnv(ctx context.Context, r client.Client, namespace s
 func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2.HorizontalPodAutoscaler, error) {
 	hpa := autoscalingv2.HorizontalPodAutoscaler{}
 	hpa.ObjectMeta = metav1.ObjectMeta{
-		Name:      g.hpaName(),
+		Name:      g.autoscalerName(),
 		Namespace: g.ihpa.GetNamespace(),
 	}
 
@@ -140,8 +140,23 @@ func (g *ihpaGeneratorImpl) HorizontalPodAutoscalerResource() (*autoscalingv2.Ho
 	return &hpa, nil
 }
 
-// generateForecastedMetricSpec returns external MetricSpec for forecasted value.
-func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricSpec, error) {
+// forecastTarget is the forecasted metric of a metric to be predicted.
+// It is shared by the HPA and the KEDA ScaledObject, which read the same forecasted metric.
+type forecastTarget struct {
+	// MetricName is the name of the forecasted metric in the metric provider, e.g. "ake.ihpa.forecasted_<name>".
+	MetricName string
+	// Labels select the series of this IHPA among the forecasted metrics.
+	Labels map[string]string
+	// AverageValue is the target of the forecasted metric per replica.
+	AverageValue resource.Quantity
+
+	// target is the target of the original metric adjusted for the forecasted metric.
+	// It is kept for HPA, which has passed the rest of the original target through.
+	target autoscalingv2.MetricTarget
+}
+
+// forecastTarget returns the forecasted metric of the metric.
+func (g *ihpaGeneratorImpl) forecastTarget(metric *autoscalingv2.MetricSpec) (*forecastTarget, error) {
 	metricName, metricTarget := extractScopedMetricInfo(metric)
 	if metricTarget == nil {
 		return nil, fmt.Errorf("cannot generate correspond metric. please check integrity of the metric instance. (%v)", *metric)
@@ -151,8 +166,6 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	if err != nil {
 		return nil, err
 	}
-	metricIdentifier.Name = correspondForecastedMetricName(metricIdentifier.Name)
-	metricIdentifier.Selector = &metav1.LabelSelector{MatchLabels: g.uniqueMetricFilters()}
 
 	var avgValue resource.Quantity
 	// Utilization of Resource metrics is special value
@@ -218,17 +231,31 @@ func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.M
 	metricTarget.Type = "AverageValue"
 	metricTarget.AverageValue = &avgValue
 
-	externalSource := &autoscalingv2.ExternalMetricSource{
-		Metric: *metricIdentifier,
-		Target: *metricTarget,
+	return &forecastTarget{
+		MetricName:   correspondForecastedMetricName(metricIdentifier.Name),
+		Labels:       g.uniqueMetricFilters(),
+		AverageValue: avgValue,
+		target:       *metricTarget,
+	}, nil
+}
+
+// generateForecastedMetricSpec returns external MetricSpec for forecasted value.
+func (g *ihpaGeneratorImpl) generateForecastedMetricSpec(metric *autoscalingv2.MetricSpec) (*autoscalingv2.MetricSpec, error) {
+	ft, err := g.forecastTarget(metric)
+	if err != nil {
+		return nil, err
 	}
 
-	forecastedMetric := &autoscalingv2.MetricSpec{
-		Type:     autoscalingv2.ExternalMetricSourceType,
-		External: externalSource,
-	}
-
-	return forecastedMetric, nil
+	return &autoscalingv2.MetricSpec{
+		Type: autoscalingv2.ExternalMetricSourceType,
+		External: &autoscalingv2.ExternalMetricSource{
+			Metric: autoscalingv2.MetricIdentifier{
+				Name:     ft.MetricName,
+				Selector: &metav1.LabelSelector{MatchLabels: ft.Labels},
+			},
+			Target: ft.target,
+		},
+	}, nil
 }
 
 // FittingJobResources generate an array of FittingJob struct
@@ -474,9 +501,12 @@ func (g *ihpaGeneratorImpl) StatusConfigMapResource() (*corev1.ConfigMap, error)
 	}
 
 	data := map[string]string{
-		"hpaName":         g.hpaName(),
+		"hpaName":         g.scalingHPAName(),
 		"fittingJobNames": strings.Join(fittingJobNames, ","),
 		"estimatorNames":  strings.Join(estimatorNames, ","),
+	}
+	if g.ihpa.Spec.ScaleBackend.Type == ihpav1beta2.ScaleBackendKEDA {
+		data["scaledObjectName"] = g.autoscalerName()
 	}
 
 	cm := corev1.ConfigMap{
@@ -559,7 +589,24 @@ func (g *ihpaGeneratorImpl) ihpaString() string {
 	return sanitizeForKubernetesResourceName(s)
 }
 
-func (g *ihpaGeneratorImpl) hpaName() string  { return g.ihpaString() }
+// autoscalerName returns the name of the autoscaler that the IHPA creates, the HPA or the ScaledObject.
+func (g *ihpaGeneratorImpl) autoscalerName() string { return g.ihpaString() }
+
+// scalingHPAName returns the name of the HPA that scales the target workload.
+// In KEDA mode, KEDA creates the HPA for the ScaledObject,
+// as keda-hpa-<ScaledObject name> unless advanced.horizontalPodAutoscalerConfig.name is set.
+func (g *ihpaGeneratorImpl) scalingHPAName() string {
+	backend := g.ihpa.Spec.ScaleBackend
+	if backend.Type != ihpav1beta2.ScaleBackendKEDA {
+		return g.autoscalerName()
+	}
+	if backend.KEDA != nil && backend.KEDA.Advanced != nil && backend.KEDA.Advanced.HorizontalPodAutoscalerConfig != nil &&
+		backend.KEDA.Advanced.HorizontalPodAutoscalerConfig.Name != "" {
+		return backend.KEDA.Advanced.HorizontalPodAutoscalerConfig.Name
+	}
+	return "keda-hpa-" + g.autoscalerName()
+}
+
 func (g *ihpaGeneratorImpl) rbacName() string { return g.ihpaString() }
 func (g *ihpaGeneratorImpl) statusConfigMapName() string {
 	return sanitizeForKubernetesResourceName(g.ihpaString() + "-status")

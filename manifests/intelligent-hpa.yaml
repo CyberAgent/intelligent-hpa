@@ -18593,12 +18593,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
-  verbs:
-  - create
-- apiGroups:
-  - ""
-  resources:
   - configmaps
   - serviceaccounts
   verbs:
@@ -18624,6 +18618,12 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - create
 - apiGroups:
   - ""
   resources:

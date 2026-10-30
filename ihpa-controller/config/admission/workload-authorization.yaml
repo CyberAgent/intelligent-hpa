@@ -1,0 +1,26 @@
+# These CRs delegate executable Pod templates to the controller. Their writers
+# must already be authorized to create Pods in the same namespace.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: workload-editors
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [ihpa.ake.cyberagent.co.jp]
+      apiVersions: [v1beta1, v1beta2]
+      operations: [CREATE, UPDATE]
+      resources: [fittingjobs, intelligenthorizontalpodautoscalers]
+  validations:
+  - expression: authorizer.group('').resource('pods').namespace(request.namespace).check('create').allowed()
+    message: Writing FittingJob or IHPA requires permission to create Pods in this namespace.
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: workload-editors
+spec:
+  policyName: workload-editors
+  validationActions: [Deny]

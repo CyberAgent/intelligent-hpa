@@ -42,6 +42,7 @@ type FittingJobReconciler struct {
 
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=fittingjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ihpa.ake.cyberagent.co.jp,resources=fittingjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=pods,verbs=create
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch,resources=cronjobs/status,verbs=get
 

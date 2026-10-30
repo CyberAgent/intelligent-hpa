@@ -75,6 +75,26 @@ metricProvider:
 - `url`: メトリクスのクエリに使用するPrometheusサーバーのURL
 - `pushgatewayUrl`: 予測メトリクスの送信に使用するPrometheus PushgatewayのURL
 
+### Workload editor authorization
+
+The default installation requires Kubernetes 1.30 or newer and installs a
+fail-closed ValidatingAdmissionPolicy and binding. Creating or updating a
+FittingJob or IHPA (either API version) requires `create` on core `pods` in the
+same namespace, in addition to the CR permission. The supplied CR editor roles
+alone no longer permit workload creation. Grant Pod creation only to trusted
+workload operators; these resources accept executable images, commands,
+service accounts and volumes. The controller also needs this permission to
+create FittingJobs on behalf of an authorized IHPA writer.
+
+Upgrade by applying the complete `manifests/intelligent-hpa.yaml` (or
+`config/default`), including both admission resources, before allowing CR
+writers access. CRD-only installation does not install this protection.
+Review existing FittingJob/IHPA resources and their CronJobs before restarting
+the controller: admission checks only new writes and cannot establish who
+previously authored a stored template. Custom installations must retain both
+the policy and its Deny binding.
+
+
 ## Usage
 
 Intelligent HPA のマニフェストについて説明します。

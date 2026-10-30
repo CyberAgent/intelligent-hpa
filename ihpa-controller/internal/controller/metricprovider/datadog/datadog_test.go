@@ -437,3 +437,20 @@ func TestMergeAllSeriesDatapointToOne(t *testing.T) {
 		}
 	}
 }
+
+func TestSendKeepsAPIKeyOutOfURL(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.RawQuery != "" {
+			t.Errorf("credential-bearing query: %s", r.URL.RawQuery)
+		}
+		if r.Header.Get("DD-API-KEY") != "test-secret" {
+			t.Error("missing API authentication header")
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+	d := &Datadog{APIKey: "test-secret"}
+	if err := d.send(server.URL, "test.metric", 1, 1, nil, ""); err != nil {
+		t.Fatal(err)
+	}
+}

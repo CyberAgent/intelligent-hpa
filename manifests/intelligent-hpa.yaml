@@ -18593,6 +18593,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - pods
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
   - configmaps
   - serviceaccounts
   verbs:
@@ -18826,7 +18832,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: ghcr.io/CyberAgent/intelligent-hpa/intelligent-hpa-controller:latest
+        image: cyberagentoss/intelligent-hpa-controller:latest
         name: manager
         resources:
           limits:
@@ -18837,3 +18843,43 @@ spec:
             memory: 20Mi
       serviceAccountName: ihpa-controller-manager
       terminationGracePeriodSeconds: 10
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  labels:
+    system: ihpa
+  name: ihpa-workload-editors
+  namespace: ihpa-controller-system
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - ihpa.ake.cyberagent.co.jp
+      apiVersions:
+      - v1beta1
+      - v1beta2
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - fittingjobs
+      - intelligenthorizontalpodautoscalers
+  validations:
+  - expression: authorizer.group('').resource('pods').namespace(request.namespace).check('create').allowed()
+    message: Writing FittingJob or IHPA requires permission to create Pods in this
+      namespace.
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  labels:
+    system: ihpa
+  name: ihpa-workload-editors
+  namespace: ihpa-controller-system
+spec:
+  policyName: ihpa-workload-editors
+  validationActions:
+  - Deny

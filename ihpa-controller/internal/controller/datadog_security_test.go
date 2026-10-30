@@ -23,7 +23,7 @@ func TestDatadogReferencesStayReferences(t *testing.T) {
 	_ = corev1.AddToScheme(scheme)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kube-system"}},
-		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "keys", Namespace: "default"}, Data: map[string][]byte{"APIKey": []byte("secret-api"), "APPKey": []byte("secret-app")}},
+		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "keys", Namespace: "default"}, Data: map[string][]byte{"APIKey": []byte("secret-api"), "APPKey": []byte("secret-app"), "OtherPassword": []byte("unrelated-password")}},
 	).Build()
 	generator, err := NewIntelligentHorizontalPodAutoscalerGenerator(sample.ihpa, &IntelligentHorizontalPodAutoscalerReconciler{Client: c}, context.Background())
 	if err != nil {
@@ -44,7 +44,8 @@ func TestDatadogReferencesStayReferences(t *testing.T) {
 		}
 	}
 	for _, fj := range fjs {
-		g, err := NewFittingJobGenerator(fj)
+		fj.Spec.Env = []corev1.EnvVar{{Name: "APIKey", Value: "overridden"}}
+		g, err := NewFittingJobGenerator(context.Background(), c, fj)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -59,9 +60,21 @@ func TestDatadogReferencesStayReferences(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sources := cj.Spec.JobTemplate.Spec.Template.Spec.Containers[0].EnvFrom
-		if len(sources) == 0 || sources[len(sources)-1].SecretRef.Name != "keys" {
-			t.Fatal("job lost Secret reference")
+		if fj.Spec.Env[0].Value != "overridden" {
+			t.Fatal("job generation modified the source CR environment")
+		}
+		container := cj.Spec.JobTemplate.Spec.Template.Spec.Containers[0]
+		if len(container.EnvFrom) != 0 {
+			t.Fatal("credential source exposed through envFrom")
+		}
+		if len(container.Env) != 2 {
+			t.Fatal("job must receive exactly two credential key references")
+		}
+		for _, env := range container.Env {
+			if env.Value != "" || env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil ||
+				env.ValueFrom.SecretKeyRef.Name != "keys" || env.ValueFrom.SecretKeyRef.Key != env.Name {
+				t.Fatal("job lost explicit Secret key reference")
+			}
 		}
 	}
 	private := ests[0].Spec.Provider.DeepCopy()

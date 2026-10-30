@@ -249,12 +249,20 @@ You can tune these parameters by [Jupyter Notebook](./fittingjob/change_point_de
 Prefer `datadog.keysFrom.secretRef` over inline `apikey` / `appkey` fields.
 References remain references in generated FittingJobs and Estimators. The
 Estimator resolves them on a private in-memory copy; training Pods receive
-`APIKey` and `APPKey` via Kubernetes `envFrom`. Training configuration is no
+only `APIKey` and `APPKey` via explicit Kubernetes `secretKeyRef` /
+`configMapKeyRef` environment variables. Other entries in the source are not
+passed to the container. The last source containing each key wins; optional
+sources retain their optionality. Training configuration is no
 longer printed. Rebuild and deploy both the controller and training images.
 
-After upgrading, recreate generated FittingJobs, Estimators and training
-configuration ConfigMaps from the original IHPA with Secret references, and
-remove old Jobs/Pods and retained logs that may contain credentials. Rotate
+Before regenerating children, remove inline `apikey` and `appkey` fields from
+all live IHPAs that use Secret references and restore their Secret-only
+configuration from the original source manifest. The old controller could
+persist resolved keys into the live IHPA itself; copying that live object
+without removing these fields can expose the keys again. Then recreate
+generated FittingJobs, Estimators and training configuration ConfigMaps from
+the cleaned IHPA, and remove old Jobs/Pods and retained logs that may contain
+credentials. Rotate
 previously exposed Datadog credentials. Reconciliation overwrites generated
 specs/configuration but cannot erase historical logs or API audit records.
 Inline credentials remain a compatibility option and are readable wherever

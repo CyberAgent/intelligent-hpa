@@ -243,18 +243,22 @@ kubectl create -f manifests/intelligent-hpa.yaml
 - [学習ジョブの仕組み](./docs/fittingjob.md)
 - [開発者向け](./docs/developer.md)
 
-### Datadog credential references
+### Datadog の認証情報の参照
 
-Prefer `datadog.keysFrom.secretRef` over inline `apikey` / `appkey` fields.
-References remain references in generated FittingJobs and Estimators. The
-Estimator resolves them on a private in-memory copy; training Pods receive
-`APIKey` and `APPKey` via Kubernetes `envFrom`. Training configuration is no
-longer printed. Rebuild and deploy both the controller and training images.
+インラインの `apikey` / `appkey` より `datadog.keysFrom.secretRef` を使用してください。
+生成する FittingJob / Estimator には参照を保持し、Estimator は実行用のコピーでのみ
+値を解決します。学習 Pod には `secretKeyRef` / `configMapKeyRef` で `APIKey` と
+`APPKey` だけを渡し、参照元の他のキーは渡しません。キーごとに、そのキーを含む
+最後の参照元を優先し、参照元の optional 設定を維持します。学習設定全体の出力は
+削除しています。controller と学習イメージの両方を再ビルド・更新してください。
 
-After upgrading, recreate generated FittingJobs, Estimators and training
-configuration ConfigMaps from the original IHPA with Secret references, and
-remove old Jobs/Pods and retained logs that may contain credentials. Rotate
-previously exposed Datadog credentials. Reconciliation overwrites generated
-specs/configuration but cannot erase historical logs or API audit records.
-Inline credentials remain a compatibility option and are readable wherever
-the inline configuration is stored; use Secret references for credentials.
+派生リソースを再生成する前に、Secret 参照を使う既存の全 IHPA からインラインの
+`apikey` / `appkey` フィールドを削除し、元のソースマニフェストに基づく Secret
+参照だけの設定に戻してください。旧 controller は解決した認証情報を IHPA 自体に
+保存する場合があり、そのフィールドを残した live オブジェクトから再生成すると
+平文の認証情報が再びコピーされます。修正した IHPA から FittingJob / Estimator /
+学習設定 ConfigMap を再生成し、認証情報が残る可能性のある古い Job / Pod / ログを
+削除してください。以前に露出した Datadog キーもローテーションしてください。
+再調整で派生リソースの spec と設定は上書きされますが、過去のログや API 監査記録は
+削除されません。インラインの認証情報は互換性のため利用可能ですが、その保存先で
+読み取り可能になります。認証情報の秘匿には Secret 参照を使用してください。

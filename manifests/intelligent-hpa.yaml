@@ -18850,7 +18850,6 @@ metadata:
   labels:
     system: ihpa
   name: ihpa-workload-editors
-  namespace: ihpa-controller-system
 spec:
   failurePolicy: Fail
   matchConstraints:
@@ -18878,7 +18877,6 @@ metadata:
   labels:
     system: ihpa
   name: ihpa-workload-editors
-  namespace: ihpa-controller-system
 spec:
   policyName: ihpa-workload-editors
   validationActions:

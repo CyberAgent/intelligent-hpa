@@ -229,6 +229,13 @@ estimatorLoop:
 				break
 			}
 
+			// Poll for replacement data without converting an unbounded interval
+			// to time.Duration or sending a far-future forecast prematurely.
+			if remaining := data[position].EstimateUnixTime - time.Now().Unix(); remaining > 0 {
+				waitTime = time.Duration(min(remaining, int64(5)))
+				break
+			}
+
 			adjustedYHat := data[position].YHat
 			// ignore first prediction because we cannot see before data.
 			if position != 0 && et.EstimateMode == string(AdjustMode) {
@@ -294,7 +301,7 @@ estimatorLoop:
 			position++
 			if len(data) > position {
 				now := time.Now().Unix()
-				waitTime = time.Duration(data[position].EstimateUnixTime - now)
+				waitTime = time.Duration(min(data[position].EstimateUnixTime-now, int64(5)))
 			} else {
 				// completed to reading all data
 				waitTime = time.Duration(5)
@@ -305,7 +312,11 @@ estimatorLoop:
 		// because if proceed to watcherDataCh case while waiting time.After(),
 		// the wait time until now becomes meaningless and new wait time is set.
 		select {
-		case d := <-et.DataCh:
+		case d, ok := <-et.DataCh:
+			if !ok {
+				et.DataCh = nil
+				continue
+			}
 			et.V(LogicMessageLogLevel).Info("receive data", "id", et.ID)
 			newData, err := readEstimateDataAsCSV(bytes.NewReader(d))
 			if err != nil {
@@ -321,15 +332,13 @@ estimatorLoop:
 			tmpData := joinEstimateData(newData, data)
 			now := time.Now().Unix()
 
-			// cut down old data
-			for i, ed := range tmpData {
-				if ed.EstimateUnixTime > now {
-					data = tmpData[i:]
-					position = 0
-					break
-				}
+			data = futureEstimateData(tmpData, now)
+			position = 0
+			waitTime = 5
+			if len(data) > 0 {
+				// Bound the timer conversion even for far-future timestamps.
+				waitTime = time.Duration(min(data[0].EstimateUnixTime-now, int64(5)))
 			}
-			waitTime = time.Duration(data[position].EstimateUnixTime - now)
 		default:
 		}
 
@@ -433,9 +442,18 @@ func readEstimateDataAsCSV(r io.Reader) ([]EstimateDatum, error) {
 			ed.LowerYHat = lowerYHat
 		}
 
+		if ed.UnixTime < 0 || ed.UnixTime > 253402300799 ||
+			math.IsNaN(ed.YHat) || math.IsInf(ed.YHat, 0) ||
+			math.IsNaN(ed.UpperYHat) || math.IsInf(ed.UpperYHat, 0) ||
+			math.IsNaN(ed.LowerYHat) || math.IsInf(ed.LowerYHat, 0) {
+			continue
+		}
 		data = append(data, ed)
 	}
 
+	if len(data) == 0 {
+		return nil, fmt.Errorf("forecast contains no valid rows")
+	}
 	return data, nil
 }
 
@@ -467,4 +485,14 @@ func joinEstimateData(newEds, oldEds []EstimateDatum) []EstimateDatum {
 		}
 	}
 	return append(frontEds, newEds...)
+}
+
+// futureEstimateData discards expired forecasts, including fully expired batches.
+func futureEstimateData(data []EstimateDatum, now int64) []EstimateDatum {
+	for i, datum := range data {
+		if datum.EstimateUnixTime > now {
+			return data[i:]
+		}
+	}
+	return nil
 }

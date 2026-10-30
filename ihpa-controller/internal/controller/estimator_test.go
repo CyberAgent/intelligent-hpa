@@ -519,8 +519,8 @@ func TestReadEstimateDataAsCSV(t *testing.T) {
 		{
 			input: `timestamp,yhat,yhat_upper,yhat_lower
 invalid,invalid,invalid,invalid`,
-			expected: []EstimateDatum{},
-			hasError: false,
+			expected: nil,
+			hasError: true,
 		},
 		{
 			input: `timestamp,yhat,yhat_upper

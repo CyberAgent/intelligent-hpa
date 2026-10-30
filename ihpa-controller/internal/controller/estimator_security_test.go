@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"github.com/go-logr/logr"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-logr/logr"
 )
 
 func TestRejectInvalidForecastRows(t *testing.T) {
@@ -43,6 +44,11 @@ func TestEstimatorSurvivesUnusableForecasts(t *testing.T) {
 			target := EstimateTarget{DataCh: input, estimatorStopCh: stop, Logger: logr.Discard()}
 			go func() { defer close(done); target.estimator() }()
 			time.Sleep(5200 * time.Millisecond)
+			select {
+			case <-done:
+				t.Fatal("estimator exited before receiving a stop request")
+			default:
+			}
 			close(stop)
 			select {
 			case <-done:

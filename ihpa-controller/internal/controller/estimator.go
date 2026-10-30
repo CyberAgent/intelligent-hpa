@@ -229,6 +229,13 @@ estimatorLoop:
 				break
 			}
 
+			// Poll for replacement data without converting an unbounded interval
+			// to time.Duration or sending a far-future forecast prematurely.
+			if remaining := data[position].EstimateUnixTime - time.Now().Unix(); remaining > 0 {
+				waitTime = time.Duration(min(remaining, int64(5)))
+				break
+			}
+
 			adjustedYHat := data[position].YHat
 			// ignore first prediction because we cannot see before data.
 			if position != 0 && et.EstimateMode == string(AdjustMode) {
@@ -294,7 +301,7 @@ estimatorLoop:
 			position++
 			if len(data) > position {
 				now := time.Now().Unix()
-				waitTime = time.Duration(min(data[position].EstimateUnixTime-now, int64(86400)))
+				waitTime = time.Duration(min(data[position].EstimateUnixTime-now, int64(5)))
 			} else {
 				// completed to reading all data
 				waitTime = time.Duration(5)
@@ -330,7 +337,7 @@ estimatorLoop:
 			waitTime = 5
 			if len(data) > 0 {
 				// Bound the timer conversion even for far-future timestamps.
-				waitTime = time.Duration(min(data[0].EstimateUnixTime-now, int64(86400)))
+				waitTime = time.Duration(min(data[0].EstimateUnixTime-now, int64(5)))
 			}
 		default:
 		}

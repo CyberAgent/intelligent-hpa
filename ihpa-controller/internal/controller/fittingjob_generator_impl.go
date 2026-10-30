@@ -1,21 +1,29 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
+	"slices"
 
 	ihpav1beta2 "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/api/v1beta2"
 	mpconfig "github.com/cyberagent-oss/intelligent-hpa/ihpa-controller/internal/controller/metricprovider/config"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type fittingJobGeneratorImpl struct {
-	fj *ihpav1beta2.FittingJob
+	fj            *ihpav1beta2.FittingJob
+	credentialEnv []corev1.EnvVar
 }
 
-func NewFittingJobGenerator(fj *ihpav1beta2.FittingJob) (FittingJobGenerator, error) {
-	return &fittingJobGeneratorImpl{fj: fj}, nil
+func NewFittingJobGenerator(ctx context.Context, c client.Client, fj *ihpav1beta2.FittingJob) (FittingJobGenerator, error) {
+	credentialEnv, err := datadogCredentialEnv(ctx, c, fj.Namespace, fj.Spec.Provider.Datadog)
+	if err != nil {
+		return nil, err
+	}
+	return &fittingJobGeneratorImpl{fj: fj, credentialEnv: credentialEnv}, nil
 }
 
 // ConfigMapResource generates an instance of ConfigMap (v1)
@@ -71,6 +79,20 @@ func (g *fittingJobGeneratorImpl) CronJobResource() (*batchv1beta1.CronJob, erro
 
 	fittingContainer := jobSpec.Template.Spec.Containers[0]
 	fittingContainer.Name = "fittingjob"
+	// Kubelet resolves only the selected credential keys at Pod startup.
+	fittingContainer.Env = slices.Clone(fittingContainer.Env)
+	for _, credential := range g.credentialEnv {
+		replaced := false
+		for i := range fittingContainer.Env {
+			if fittingContainer.Env[i].Name == credential.Name {
+				fittingContainer.Env[i] = credential
+				replaced = true
+			}
+		}
+		if !replaced {
+			fittingContainer.Env = append(fittingContainer.Env, credential)
+		}
+	}
 	if fittingContainer.Image == "" {
 		fittingContainer.Image = DefaultImage
 	}

@@ -91,6 +91,15 @@ func (r *EstimatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.V(ResourceMessageLogLevel).Info("configmap is already exists", "name", cm.GetName())
 	}
 
+	// Resolve credentials only on a private runtime copy. Never persist them to a CR.
+	provider := est.Spec.Provider.DeepCopy()
+	if provider.Datadog != nil {
+		if err := resolveDatadogKeysFromEnv(ctx, r.Client, est.Namespace, provider.Datadog); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+	nativeProvider := mpconfig.ConvertMetricProvider(provider).ActiveProvider()
+
 	// * start estimate
 	if _, ok := r.estimatorChs[req.String()]; !ok {
 		// capacity is set to 5 but usually pick the data by estimator immediately
@@ -110,7 +119,7 @@ func (r *EstimatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				MetricTags:     est.Spec.MetricTags,
 				BaseMetricName: est.Spec.BaseMetricName,
 				BaseMetricTags: est.Spec.BaseMetricTags,
-				MetricProvider: mpconfig.ConvertMetricProvider(est.Spec.Provider.DeepCopy()).ActiveProvider(),
+				MetricProvider: nativeProvider,
 			},
 		}
 		r.estimatorChs[req.String()] = dataCh
@@ -128,7 +137,7 @@ func (r *EstimatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				MetricTags:     &est.Spec.MetricTags,
 				BaseMetricName: &est.Spec.BaseMetricName,
 				BaseMetricTags: &est.Spec.BaseMetricTags,
-				MetricProvider: mpconfig.ConvertMetricProvider(est.Spec.Provider.DeepCopy()).ActiveProvider(),
+				MetricProvider: nativeProvider,
 			},
 		}
 	}

@@ -55,7 +55,7 @@ func (r *FittingJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	g, err := NewFittingJobGenerator(&fj)
+	g, err := NewFittingJobGenerator(ctx, r.Client, &fj)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create fittingjob resource generator: %w", err)
 	}

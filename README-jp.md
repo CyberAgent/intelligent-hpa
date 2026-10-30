@@ -242,3 +242,19 @@ kubectl create -f manifests/intelligent-hpa.yaml
 - [Estimator とメトリクス調整の仕組み](./docs/estimator.md)
 - [学習ジョブの仕組み](./docs/fittingjob.md)
 - [開発者向け](./docs/developer.md)
+
+### Datadog credential references
+
+Prefer `datadog.keysFrom.secretRef` over inline `apikey` / `appkey` fields.
+References remain references in generated FittingJobs and Estimators. The
+Estimator resolves them on a private in-memory copy; training Pods receive
+`APIKey` and `APPKey` via Kubernetes `envFrom`. Training configuration is no
+longer printed. Rebuild and deploy both the controller and training images.
+
+After upgrading, recreate generated FittingJobs, Estimators and training
+configuration ConfigMaps from the original IHPA with Secret references, and
+remove old Jobs/Pods and retained logs that may contain credentials. Rotate
+previously exposed Datadog credentials. Reconciliation overwrites generated
+specs/configuration but cannot erase historical logs or API audit records.
+Inline credentials remain a compatibility option and are readable wherever
+the inline configuration is stored; use Secret references for credentials.

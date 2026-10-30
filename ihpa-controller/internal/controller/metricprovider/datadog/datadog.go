@@ -120,9 +120,14 @@ func (d *Datadog) send(baseurl string, metricName string, timestamp int64, point
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s?api_key=%s", baseurl, TimeseriesSeriesPath, d.APIKey)
-
-	resp, err := http.Post(url, "application/json", bytes.NewReader(tsjson))
+	url := baseurl + TimeseriesSeriesPath
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(tsjson))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("DD-API-KEY", d.APIKey)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}

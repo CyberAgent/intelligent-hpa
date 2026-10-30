@@ -64,13 +64,6 @@ func NewIntelligentHorizontalPodAutoscalerGenerator(
 	}
 	rl := *totalResourceList(containers)
 
-	// Resolve Datadog API/APP keys from Secrets/ConfigMaps if KeysFrom is specified
-	if ihpa.Spec.MetricProvider.Datadog != nil && len(ihpa.Spec.MetricProvider.Datadog.KeysFrom) > 0 {
-		if err := resolveDatadogKeysFromEnv(ctx, r.Client, ihpa.GetNamespace(), ihpa.Spec.MetricProvider.Datadog); err != nil {
-			return nil, fmt.Errorf("failed to resolve datadog keys from env: %w", err)
-		}
-	}
-
 	return &ihpaGeneratorImpl{ihpa: ihpa, scaleTargetRequests: rl, kubeSystemUID: string(kubeSystemNS.GetUID())}, nil
 }
 

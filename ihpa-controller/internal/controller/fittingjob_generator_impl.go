@@ -71,6 +71,13 @@ func (g *fittingJobGeneratorImpl) CronJobResource() (*batchv1beta1.CronJob, erro
 
 	fittingContainer := jobSpec.Template.Spec.Containers[0]
 	fittingContainer.Name = "fittingjob"
+	if dd := g.fj.Spec.Provider.Datadog; dd != nil {
+		// Kubelet resolves references when the Pod starts; no Secret is serialized.
+		for _, source := range dd.KeysFrom {
+			source.Prefix = "" // APIKey and APPKey are the documented source keys.
+			fittingContainer.EnvFrom = append(fittingContainer.EnvFrom, source)
+		}
+	}
 	if fittingContainer.Image == "" {
 		fittingContainer.Image = DefaultImage
 	}

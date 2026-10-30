@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+
 from typing import Dict, List
 
 import yaml
@@ -42,8 +44,8 @@ class Config:
         for name in self.provider:
             if name == 'datadog':
                 return datadog.Datadog(
-                    apikey=self.provider[name]['apikey'],
-                    appkey=self.provider[name]['appkey']
+                    apikey=os.environ.get('APIKey', self.provider[name].get('apikey', '')),
+                    appkey=os.environ.get('APPKey', self.provider[name].get('appkey', ''))
                 )
             elif name == 'prometheus':
                 return prometheus.Prometheus(
@@ -57,8 +59,6 @@ class Config:
 def load(path: str) -> Config:
     with open(path, mode='r') as f:
         d = yaml.safe_load(f)
-
-    print(d)
 
     return Config(
         provider=d.get('provider'),

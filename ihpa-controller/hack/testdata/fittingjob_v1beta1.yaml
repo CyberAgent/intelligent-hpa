@@ -1,0 +1,22 @@
+apiVersion: ihpa.ake.cyberagent.co.jp/v1beta1
+kind: FittingJob
+metadata:
+  name: fittingjob
+spec:
+  dataConfigMap:
+    name: forecast
+  template:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: fittingjob
+            image: untrusted/image:latest
+  metric:
+    name: test
+  provider:
+    name: datadog
+    datadog:
+      apikey: placeholder
+      appkey: placeholder

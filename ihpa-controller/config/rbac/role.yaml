@@ -90,6 +90,14 @@ rules:
   verbs:
   - get
 - apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+- apiGroups:
   - ihpa.ake.cyberagent.co.jp
   resources:
   - estimators
@@ -113,6 +121,18 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - keda.sh
+  resources:
+  - scaledobjects
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
